@@ -1,0 +1,19 @@
+# dsh-boot-custom bundle patch.
+#
+# The bundle shape expected by DSH 0.1.7+:
+#   - `insert` adds one loader row; the row id, the package name and the host
+#     module's `name` export are all `dsh-boot-custom`;
+#   - the module is referenced by PACKAGE NAME, never by a relative path, so
+#     the profile launcher resolves it from node_modules;
+#   - the single row mounts BOTH halves. The host half comes from lib/index.js
+#     (`main`); the browser half is discovered from `dsh.client` plus the
+#     `./client` export and served as lib/client.js.
+#
+# Desktop profile: the host half declares `inject: ['webServer']` because the
+# desktop GUI is served over the loopback HTTP carrier, which renders the index
+# and therefore owns `webserver/index-inject`. The browser half declares
+# `inject: ['slots']` so the renderer's slot registry is present before the
+# overlay entry registers.
+- insert:
+    - id: dsh-boot-custom
+      name: 'dsh-boot-custom'

@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.tmp/
+lib/.client.bundle.cjs
+lib/**/*.map
+.DS_Store
+Thumbs.db
+*.tgz
+/Ocean_4K.mp4
