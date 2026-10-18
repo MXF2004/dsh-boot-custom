@@ -73,9 +73,7 @@ npm test          # 49 项测试
 npm pack          # 生成 dsh-boot-custom-1.0.0.tgz
 ```
 
-### 从旧名称升级
-
-项目原名为 `dsh-boot-animation`。1.0.0 的包名、patch 行 id、路由、设置命名空间、数据目录和 DOM id 均已更名为 `dsh-boot-custom` / `boot-custom`。
+### 升级
 
 升级前请先卸载旧包并清理 profile：
 
