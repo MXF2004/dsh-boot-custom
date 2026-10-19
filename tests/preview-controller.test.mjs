@@ -96,7 +96,13 @@ test('a preview dismisses immediately, tears down and reports onDispose/onFinish
   })
 
   assert.ok(window.document.getElementById('dsh-boot-custom-root'), 'preview overlay mounted')
-  // Any key dismisses a preview, not just Escape/Space.
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Shift', bubbles: true }))
+  assert.equal(
+    window.document.getElementById('dsh-boot-custom-root')?.dataset.state,
+    'running',
+    'a bare modifier is not a skip gesture',
+  )
+  // Any non-modifier key dismisses a preview, not just Escape/Space.
   window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'a', bubbles: true }))
   assert.equal(
     window.document.getElementById('dsh-boot-custom-root')?.dataset.state,
@@ -184,4 +190,37 @@ test('custom audio starts in CSS mode even without a video', async () => {
     globalThis.Audio = previousAudio
     host.remove()
   }
+})
+
+test('the preview traps Tab and restores focus on teardown', async () => {
+  const host = window.document.createElement('div')
+  window.document.body.appendChild(host)
+  const background = window.document.createElement('button')
+  background.textContent = 'background'
+  window.document.getElementById('root').appendChild(background)
+  background.focus()
+  const config = normalizeConfig({ enabled: true, mode: 'css', transition: { duration: 0.1 } })
+  const controller = new BootController({
+    ctx: {
+      on() {
+        return () => undefined
+      },
+    },
+    getConfig: () => config,
+    onFinished: () => undefined,
+  })
+  const detach = controller.attach(host)
+  controller.playPreview(config)
+  assert.equal(window.document.activeElement?.id, 'dsh-boot-custom-root', 'focus enters the modal')
+
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+  assert.equal(window.document.activeElement?.id, 'dsh-boot-custom-root', 'Tab is trapped in the overlay')
+
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  await new Promise((resolve) => setTimeout(resolve, 300))
+  assert.equal(window.document.activeElement, background, 'focus returns to the previous control')
+  detach()
+  controller.dispose()
+  background.remove()
+  host.remove()
 })

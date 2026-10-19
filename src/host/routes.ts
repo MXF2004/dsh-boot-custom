@@ -11,6 +11,7 @@
  * @module dsh-boot-custom/host/routes
  */
 
+import { timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import { ROUTES } from '../shared/constants.js'
@@ -68,15 +69,25 @@ function sendJson(res: ServerResponse, status: number, payload: ConfigResponse):
   }
 }
 
+/** Maximum time a client may spend streaming a JSON body. */
+const BODY_TIMEOUT_MS = 15_000
+
 /** Read a size-capped JSON request body. */
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = []
   let size = 0
-  for await (const chunk of req) {
-    const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : (chunk as Buffer)
-    size += buffer.length
-    if (size > LIMITS.maxBodyBytes) throw new Error('request body is too large')
-    chunks.push(buffer)
+  const timer = setTimeout(() => {
+    req.destroy(new Error('request body timeout'))
+  }, BODY_TIMEOUT_MS)
+  try {
+    for await (const chunk of req) {
+      const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : (chunk as Buffer)
+      size += buffer.length
+      if (size > LIMITS.maxBodyBytes) throw new Error('request body is too large')
+      chunks.push(buffer)
+    }
+  } finally {
+    clearTimeout(timer)
   }
   if (size === 0) return {}
   const text = Buffer.concat(chunks).toString('utf8')
@@ -107,7 +118,12 @@ export function isLoopbackHost(value: unknown): boolean {
 function hasWriteToken(req: IncomingMessage, token: string): boolean {
   if (token.length === 0) return false
   const header = req.headers['x-dsh-boot-custom-token']
-  return typeof header === 'string' && header === token
+  if (typeof header !== 'string' || header.length !== token.length) return false
+  try {
+    return timingSafeEqual(Buffer.from(header, 'utf8'), Buffer.from(token, 'utf8'))
+  } catch {
+    return false
+  }
 }
 
 /**

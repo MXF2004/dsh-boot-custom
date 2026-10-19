@@ -575,6 +575,7 @@ export function createSettingsPanel(deps: PanelDeps): React.ComponentType<{ clos
             onChange: setUrlInput,
             placeholder: '网络视频地址或 file:/// 绝对路径',
             mono: true,
+            ariaLabel: '视频地址',
           }),
           h(Button, { onClick: addUrlVideo }, '添加视频'),
           h(Button, { onClick: () => videoInput.current?.click() }, '选择本地视频'),
@@ -587,6 +588,7 @@ export function createSettingsPanel(deps: PanelDeps): React.ComponentType<{ clos
           className: 'dba-set-hidden-input',
           type: 'file',
           accept: acceptFor('video'),
+          'aria-label': '选择视频文件',
           onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
             const file = event.target.files?.[0]
             event.target.value = ''
@@ -972,6 +974,7 @@ export function createSettingsPanel(deps: PanelDeps): React.ComponentType<{ clos
           className: 'dba-set-hidden-input',
           type: 'file',
           accept: acceptFor('audio'),
+          'aria-label': '选择音频文件',
           onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
             const file = event.target.files?.[0]
             event.target.value = ''

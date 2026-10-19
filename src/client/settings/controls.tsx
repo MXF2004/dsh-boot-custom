@@ -36,6 +36,20 @@ export function Section(props: SectionProps): React.ReactElement {
   )
 }
 
+/** Accessible-name context shared by a {@link Row} and its control. */
+interface RowA11y {
+  controlId: string
+  hintId?: string
+  label: string
+}
+
+const RowContext = React.createContext<RowA11y | null>(null)
+
+/** Read the surrounding row's accessible-name wiring, when present. */
+function useRowA11y(): RowA11y | null {
+  return React.useContext(RowContext)
+}
+
 /** One labelled row. */
 export interface RowProps {
   label: string
@@ -45,16 +59,22 @@ export interface RowProps {
 
 /** Label + control row. */
 export function Row(props: RowProps): React.ReactElement {
+  const controlId = React.useId()
+  const hintId = props.hint === undefined ? undefined : `${controlId}-hint`
   return h(
     'div',
     { className: 'dba-set-row' },
     h(
       'div',
       { className: 'dba-set-row-label' },
-      h('span', null, props.label),
-      props.hint === undefined ? null : h('small', null, props.hint),
+      h('label', { htmlFor: controlId }, props.label),
+      props.hint === undefined ? null : h('small', { id: hintId }, props.hint),
     ),
-    h('div', { className: 'dba-set-row-control' }, props.children),
+    h(
+      RowContext.Provider,
+      { value: { controlId, hintId, label: props.label } },
+      h('div', { className: 'dba-set-row-control' }, props.children),
+    ),
   )
 }
 
@@ -68,6 +88,7 @@ export interface SwitchProps {
 
 /** Accessible checkbox rendered as a switch. */
 export function Switch(props: SwitchProps): React.ReactElement {
+  const a11y = useRowA11y()
   return h(
     'label',
     { className: 'dba-set-switch' },
@@ -75,6 +96,9 @@ export function Switch(props: SwitchProps): React.ReactElement {
       type: 'checkbox',
       checked: props.checked,
       disabled: props.disabled === true,
+      id: a11y?.controlId,
+      'aria-describedby': a11y?.hintId,
+      'aria-label': a11y === null ? props.label : undefined,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => props.onChange(event.target.checked),
     }),
     h('span', { className: 'dba-set-switch-track', 'aria-hidden': 'true' }, h('span', { className: 'dba-set-switch-thumb' })),
@@ -94,6 +118,7 @@ export interface SliderProps {
 
 /** Range input plus value readout. */
 export function Slider(props: SliderProps): React.ReactElement {
+  const a11y = useRowA11y()
   const format = props.format ?? ((value: number) => String(value))
   return h(
     'div',
@@ -104,9 +129,11 @@ export function Slider(props: SliderProps): React.ReactElement {
       max: props.max,
       step: props.step,
       value: props.value,
+      id: a11y?.controlId,
+      'aria-describedby': a11y?.hintId,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => props.onChange(Number(event.target.value)),
     }),
-    h('output', { className: 'dba-set-slider-value' }, format(props.value)),
+    h('output', { className: 'dba-set-slider-value', htmlFor: a11y?.controlId }, format(props.value)),
   )
 }
 
@@ -116,16 +143,21 @@ export interface TextFieldProps {
   onChange: (next: string) => void
   placeholder?: string
   mono?: boolean
+  ariaLabel?: string
 }
 
 /** Single-line text input. */
 export function TextField(props: TextFieldProps): React.ReactElement {
+  const a11y = useRowA11y()
   return h('input', {
     className: props.mono === true ? 'dba-set-input dba-set-mono' : 'dba-set-input',
     type: 'text',
     value: props.value,
     placeholder: props.placeholder,
     spellCheck: false,
+    id: a11y?.controlId,
+    'aria-describedby': a11y?.hintId,
+    'aria-label': a11y === null ? props.ariaLabel : undefined,
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => props.onChange(event.target.value),
   })
 }
@@ -142,12 +174,15 @@ export interface TextAreaProps {
 
 /** Textarea. */
 export function TextArea(props: TextAreaProps): React.ReactElement {
+  const a11y = useRowA11y()
   return h('textarea', {
     className: props.mono === true ? 'dba-set-input dba-set-mono' : 'dba-set-input',
     rows: props.rows ?? 3,
     value: props.value,
     placeholder: props.placeholder,
     spellCheck: false,
+    id: a11y?.controlId,
+    'aria-describedby': a11y?.hintId,
     onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => props.onChange(event.target.value),
     onBlur: props.onBlur,
   })
@@ -174,11 +209,14 @@ export interface SelectProps {
 
 /** Select control. */
 export function Select(props: SelectProps): React.ReactElement {
+  const a11y = useRowA11y()
   return h(
     'select',
     {
       className: 'dba-set-input dba-set-select',
       value: props.value,
+      id: a11y?.controlId,
+      'aria-describedby': a11y?.hintId,
       onChange: (event: React.ChangeEvent<HTMLSelectElement>) => props.onChange(event.target.value),
     },
     props.options.map((option) => h('option', { key: option.value, value: option.value }, option.label)),
@@ -211,6 +249,7 @@ function pickerHex(value: string): string {
 
 /** Swatch + text field, so rgba() and named colors remain editable. */
 export function ColorField(props: ColorFieldProps): React.ReactElement {
+  const a11y = useRowA11y()
   const [text, setText] = React.useState(props.value)
   React.useEffect(() => setText(props.value), [props.value])
   const commit = (): void => {
@@ -227,7 +266,7 @@ export function ColorField(props: ColorFieldProps): React.ReactElement {
       className: 'dba-set-swatch',
       type: 'color',
       value: pickerHex(text),
-      'aria-label': 'color',
+      'aria-label': a11y === null ? '颜色选择器' : `${a11y.label}：颜色选择器`,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
         setText(event.target.value)
         props.onChange(event.target.value)
@@ -238,6 +277,8 @@ export function ColorField(props: ColorFieldProps): React.ReactElement {
       type: 'text',
       value: text,
       spellCheck: false,
+      id: a11y?.controlId,
+      'aria-describedby': a11y?.hintId,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => setText(event.target.value),
       onBlur: commit,
       onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -257,6 +298,7 @@ export interface ButtonProps {
   variant?: ButtonVariant
   disabled?: boolean
   title?: string
+  ariaLabel?: string
 }
 
 /** Button control. */
@@ -269,6 +311,7 @@ export function Button(props: ButtonProps): React.ReactElement {
       onClick: props.onClick,
       disabled: props.disabled === true,
       title: props.title,
+      'aria-label': props.ariaLabel ?? props.title,
     },
     props.children,
   )
@@ -282,5 +325,15 @@ export interface NoticeProps {
 
 /** Notice block. */
 export function Notice(props: NoticeProps): React.ReactElement {
-  return h('div', { className: `dba-set-notice dba-set-notice--${props.tone ?? 'info'}`, role: 'status' }, props.children)
+  const tone = props.tone ?? 'info'
+  return h(
+    'div',
+    {
+      className: `dba-set-notice dba-set-notice--${tone}`,
+      role: tone === 'error' ? 'alert' : 'status',
+      'aria-live': tone === 'error' ? 'assertive' : 'polite',
+      'aria-atomic': 'true',
+    },
+    props.children,
+  )
 }

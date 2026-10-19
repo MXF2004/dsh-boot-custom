@@ -21,6 +21,7 @@
 import { DOM_IDS, GLOBALS } from '../shared/constants.js'
 import { contrastSymbolColor, escapeHtml, resolveGreeting } from '../shared/config.js'
 import { buildCssEffectCss } from '../shared/css-effects.js'
+import { DEFAULT_CONFIG } from '../shared/defaults.js'
 import { LIMITS, type BootAnimationConfig, type BootAnimationMeta } from '../shared/types.js'
 
 /** Structured index injection rows (mirrors `@deepseek-ai/dsh-host-webserver`). */
@@ -242,6 +243,58 @@ export function buildFirstFrameScript(): string {
   ].join('\n')
 }
 
+/** Serialize a value only to measure/validate the injected payload. */
+function jsonLength(value: unknown): number {
+  try {
+    return JSON.stringify(value)?.length ?? 0
+  } catch {
+    return Number.POSITIVE_INFINITY
+  }
+}
+
+/** A media source is safe for inline injection when it is compact and non-data. */
+function compactMediaSource(source: string): boolean {
+  return !source.startsWith('data:') && source.length <= 64 * 1024
+}
+
+/**
+ * Bound the config that is inlined into index.html. A valid config can carry
+ * up to thirty 96 Mi-character data URLs, which would otherwise make the
+ * first HTML response gigabytes long. The persisted config is untouched: only
+ * the injected copy is degraded, and the UI can still read the full value
+ * through the host route.
+ */
+function limitInjectionConfig(config: BootAnimationConfig): BootAnimationConfig {
+  const originalSize = jsonLength(config)
+  if (originalSize <= LIMITS.maxInjectedConfigChars) return config
+
+  const stripped: BootAnimationConfig = {
+    ...config,
+    videos: config.videos.filter(compactMediaSource),
+    audio: {
+      ...config.audio,
+      file: compactMediaSource(config.audio.file) ? config.audio.file : '',
+    },
+  }
+  const strippedSize = jsonLength(stripped)
+  if (strippedSize <= LIMITS.maxInjectedConfigChars) {
+    console.warn(
+      `[dsh-boot-custom] injected config was ${String(originalSize)} chars; data/long media sources were omitted from the first-frame payload`,
+    )
+    return stripped
+  }
+  if (strippedSize <= LIMITS.maxInjectedConfigHardChars) {
+    console.warn(
+      `[dsh-boot-custom] injected config remains ${String(strippedSize)} chars after media stripping`,
+    )
+    return stripped
+  }
+  console.warn(
+    `[dsh-boot-custom] injected config exceeds ${String(LIMITS.maxInjectedConfigHardChars)} chars; disabling the boot animation for this render`,
+  )
+  return { ...DEFAULT_CONFIG, enabled: false }
+}
+
 /**
  * Build the complete structured row table for one index render.
  *
@@ -256,13 +309,14 @@ export function buildInjectionRows(
   config: BootAnimationConfig,
   meta: BootAnimationMeta,
 ): IndexInjectionRow[] {
+  const injectedConfig = limitInjectionConfig(config)
   const rows: IndexInjectionRow[] = [
-    { kind: 'global', name: GLOBALS.config, value: config },
+    { kind: 'global', name: GLOBALS.config, value: injectedConfig },
     { kind: 'global', name: GLOBALS.meta, value: meta },
   ]
-  if (!config.enabled) return rows
-  rows.push({ kind: 'style', text: buildFirstFrameStyle(config) })
-  rows.push({ kind: 'html', placement: 'body', html: buildFirstFrameMarkup(config) })
+  if (!injectedConfig.enabled) return rows
+  rows.push({ kind: 'style', text: buildFirstFrameStyle(injectedConfig) })
+  rows.push({ kind: 'html', placement: 'body', html: buildFirstFrameMarkup(injectedConfig) })
   rows.push({ kind: 'script', placement: 'body', text: buildFirstFrameScript() })
   return rows
 }

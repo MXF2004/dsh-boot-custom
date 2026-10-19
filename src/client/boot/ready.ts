@@ -31,6 +31,12 @@ export interface ReadyOptions {
   minVisibleMs: number
   /** Fixed lifetime for a preview run. */
   previewMs?: number
+  /** Injectable clock (tests); defaults to `performance.now`. */
+  now?: () => number
+  /** Injectable UI deadline (tests). */
+  uiDeadlineMs?: number
+  /** Injectable DOM-probe cadence (tests). */
+  probeIntervalMs?: number
 }
 
 /** Handle over the readiness promise. */
@@ -69,7 +75,10 @@ function domLooksReady(): boolean {
  */
 export function createReadySignal(options: ReadyOptions): ReadySignal {
   const { ledger, ctx } = options
-  const startedAt = performance.now()
+  const now = options.now ?? (() => performance.now())
+  const uiDeadlineMs = Math.max(0, options.uiDeadlineMs ?? UI_DEADLINE_MS)
+  const probeIntervalMs = Math.max(1, options.probeIntervalMs ?? 150)
+  const startedAt = now()
   const minVisibleMs = Math.max(0, options.minVisibleMs)
   let settled = false
   let finishTimer = 0
@@ -87,7 +96,7 @@ export function createReadySignal(options: ReadyOptions): ReadySignal {
   /** Resolve once the minimum visible time has elapsed. */
   const scheduleFinish = (): void => {
     if (settled || finishTimer !== 0) return
-    const elapsed = performance.now() - startedAt
+    const elapsed = now() - startedAt
     const wait = Math.max(0, minVisibleMs - elapsed)
     finishTimer = ledger.timeout(finish, wait)
   }
@@ -136,13 +145,13 @@ export function createReadySignal(options: ReadyOptions): ReadySignal {
         scheduleFinish()
         return
       }
-      const elapsed = performance.now() - startedAt
-      if (elapsed > UI_DEADLINE_MS) scheduleFinish()
+      const elapsed = now() - startedAt
+      if (elapsed > uiDeadlineMs) scheduleFinish()
     } catch (error) {
       console.warn('[dsh-boot-custom] readiness probe failed:', error)
       scheduleFinish()
     }
-  }, 150)
+  }, probeIntervalMs)
 
   return {
     promise,

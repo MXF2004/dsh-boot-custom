@@ -35,6 +35,7 @@ import { Countdown } from './countdown.js'
 import { clearVar, disableAnimations, div, isEditableTarget, setVar } from './dom.js'
 import { ProgressTracker } from './progress.js'
 import { createReadySignal, type ReadyContext, type ReadySignal } from './ready.js'
+import { remainingHardTimeoutMs } from './timing.js'
 import { VideoLayer } from './video.js'
 
 /** Which lifecycle produced a run. */
@@ -353,6 +354,30 @@ export class BootController {
     }
   }
 
+  /** Circle Tab through the overlay's focusable controls (or the root). */
+  private trapFocus(run: Run, backward: boolean): void {
+    const root = run.refs.root
+    const focusables = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    )
+    if (focusables.length === 0) {
+      root.focus({ preventScroll: true })
+      return
+    }
+    const current = document.activeElement
+    const index = current === null ? -1 : focusables.indexOf(current as HTMLElement)
+    const next = backward
+      ? index <= 0
+        ? focusables[focusables.length - 1]
+        : focusables[index - 1]
+      : index < 0 || index === focusables.length - 1
+        ? focusables[0]
+        : focusables[index + 1]
+    next?.focus({ preventScroll: true })
+  }
+
   /** Apply live control changes to a running preview (rate / volume / colors). */
   updateLive(config: BootAnimationConfig): void {
     const run = this.run
@@ -451,6 +476,7 @@ export class BootController {
       videoPlanned,
     }
     this.run = run
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
     try {
       this.host.appendChild(refs.root)
@@ -464,6 +490,15 @@ export class BootController {
     } catch {
       // Focus is an enhancement; the overlay still works without it.
     }
+    // Registered before the inert cleanup so reverse-order disposal removes
+    // inert first, then returns focus to the previous control.
+    ledger.add(() => {
+      try {
+        if (previousFocus !== null && previousFocus.isConnected) previousFocus.focus({ preventScroll: true })
+      } catch {
+        // The previous control may belong to a closed modal.
+      }
+    })
 
     // Keep keyboard focus out of the app behind the boot screen. The settings
     // modal is body-level and is hidden separately during previews.
@@ -689,8 +724,13 @@ export class BootController {
       ledger.timeout(() => this.beginExit(run, 'ready'), config.progress.enabled ? 240 : 0)
     })
 
-    // Hard safety net: nothing may keep the mask on screen for longer.
-    ledger.timeout(() => this.beginExit(run, 'hard-timeout'), LIMITS.hardTimeoutMs)
+    // Hard safety net: nothing may keep the mask on screen for longer. Count
+    // from the same first-frame paint as the minimum duration, not from the
+    // client's later begin() call.
+    ledger.timeout(
+      () => this.beginExit(run, 'hard-timeout'),
+      remainingHardTimeoutMs(elapsedMs),
+    )
   }
 
   /** Paint one progress value. */
@@ -873,8 +913,21 @@ export class BootController {
     const run = this.run
     if (run === null || run.state !== 'running') return
     if (event.defaultPrevented || event.isComposing) return
-    // Keep browser/developer function keys (F1–F12) out of the skip gesture.
+    // Keep browser/developer function keys (F1–F12) and bare modifiers out of
+    // the skip gesture; a modifier alone is not an intentional skip.
     if (/^F(?:[1-9]|1[0-2])$/.test(event.key)) return
+    if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return
+    // The overlay is modal: trap Tab inside it instead of letting focus fall
+    // behind the mask (the app root is inert, but browser chrome is not).
+    if (event.key === 'Tab') {
+      try {
+        event.preventDefault()
+        this.trapFocus(run, event.shiftKey)
+      } catch {
+        // Focus trapping is best-effort.
+      }
+      return
+    }
     // A preview ignores the editable-target guard: the Settings modal may
     // still hold focus in its (now hidden) form, and a key must still dismiss
     // the preview rather than being swallowed by a stale input.

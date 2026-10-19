@@ -25,6 +25,9 @@ import { readInjectedConfig, readInjectedMeta } from '../runtime/env.js'
 /** Save lifecycle surfaced by the panel. */
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
+/** A stalled host must not leave the panel in `saving` forever. */
+const REQUEST_TIMEOUT_MS = 15_000
+
 /** Snapshot published by `ctx.settingsScope`. */
 interface ScopeSnapshot {
   status?: 'loading' | 'ready' | 'unavailable'
@@ -171,6 +174,7 @@ export class ClientConfigStore {
         method: 'GET',
         headers: { accept: 'application/json', ...this.authHeaders() },
         cache: 'no-store',
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
       if (!response.ok) return
       const payload = (await response.json()) as RouteResponse
@@ -323,6 +327,7 @@ export class ClientConfigStore {
         ...this.authHeaders(),
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
     const payload = (await response.json().catch(() => ({}))) as RouteResponse
     if (!response.ok || payload.ok === false) {

@@ -7,3 +7,6 @@ lib/**/*.map
 Thumbs.db
 *.tgz
 /Ocean_4K.mp4
+test-results/
+playwright-report/
+blob-report/

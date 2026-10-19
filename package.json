@@ -1,7 +1,7 @@
 {
   "name": "dsh-boot-custom",
-  "version": "1.0.1",
-  "description": "Configurable boot animation for the DeepSeek Harness desktop app: video rotation, 8 CSS styles, first-frame anti-flash mask, boot timing and any-key skip.",
+  "version": "1.0.2",
+  "description": "Configurable boot animation for the DeepSeek Harness desktop app: video rotation, 8 CSS styles, first-frame anti-flash mask, boot timing and key/click skip.",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -46,14 +46,19 @@
     "typecheck": "tsc -p tsconfig.host.json --noEmit && tsc -p tsconfig.client.json",
     "pretest": "npm run build",
     "test": "node --test",
+    "pretest:coverage": "npm run build",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=lib/**/*.js --test-coverage-lines=85 --test-coverage-branches=60 --test-coverage-functions=60",
+    "test:e2e": "playwright test",
     "prepack": "npm run build"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.20.0",
     "@types/react": "^18.3.0",
+    "axe-core": "^4.14.0",
     "esbuild": "^0.25.0",
     "jsdom": "^26.1.0",
     "react": "^18.3.1",

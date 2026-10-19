@@ -3,8 +3,8 @@
   <h1>DSH Boot Custom</h1>
   <p>给 DeepSeek Harness 桌面端一个完整的开机动画：视频轮播、8 种 CSS 风格、首帧防白屏、任意键跳过，以及可配置的进入时机。</p>
   <p>
-    <img alt="version" src="https://img.shields.io/badge/version-1.0.1-4f9dff?style=flat-square" />
-    <img alt="tests" src="https://img.shields.io/badge/tests-54%20passing-2ea043?style=flat-square" />
+    <img alt="version" src="https://img.shields.io/badge/version-1.0.2-4f9dff?style=flat-square" />
+    <img alt="tests" src="https://img.shields.io/badge/tests-69%20passing-2ea043?style=flat-square" />
     <img alt="license" src="https://img.shields.io/badge/license-MIT-2ea043?style=flat-square" />
     <img alt="DSH" src="https://img.shields.io/badge/DSH-0.1.7%2B%20%7C%200.2.x-8b5cf6?style=flat-square" />
   </p>
@@ -27,8 +27,8 @@
 - **8 种 CSS 背景动画**：呼吸光晕、极光流影、星河流转、光带扫过、脉冲涟漪、霓虹网格、旋转光锥、纯净背景；纯 CSS 伪元素实现，无额外 DOM 与 JS 计时器。
 - **首帧防白屏**：宿主通过 `webserver/index-inject` 注入首帧遮罩，浏览器绘制第一帧就是动画背景；遮罩指针穿透，12 秒未认领时纯 CSS 淡出。
 - **进入时机**：动画至少播放 `bootDuration` 秒，并且应用已就绪，才显示软件页面；不会出现应用页面提前顶掉动画。
-- **任意键 / 点击跳过**：支持鼠标、触摸和键盘按键（F1–F12 功能键除外）；仍遵守「允许跳过」与「跳过倒计时」。
-- **完整可配置**：Logo、问候语、真实进度条、跳过倒计时、6 种退场转场、自定义音效、播放速度。
+- **任意键 / 点击跳过**：支持鼠标、触摸和键盘按键（F1–F12 功能键除外；Tab 保留模态焦点陷阱）；仍遵守「允许跳过」与「跳过倒计时」。
+- **完整可配置**：Logo、问候语、真实进度条、跳过倒计时、5 种退场转场、自定义音效、播放速度。
 - **桌面融合**：全窗口固定定位，覆盖侧边栏与标题栏；Windows 原生 caption 按钮区域透明，图标颜色随背景自适应。
 - **设置内预览**：预览时自动隐藏设置面板并全屏播放，结束后恢复；当前草稿不会写入配置。
 - **性能友好**：客户端 bundle 已压缩，CSS 装饰层在视频正常播放时暂停，首帧只注入当前风格的 keyframes。
@@ -53,11 +53,11 @@
 
 ### 安装
 
-1. 从 Releases 下载 `dsh-boot-custom-1.0.1.tgz`，或在本仓库执行 `npm pack` 生成。
+1. 从 Releases 下载 `dsh-boot-custom-1.0.2.tgz`，或在本仓库执行 `npm pack` 生成。
 2. 安装到 desktop profile：
 
 ```powershell
-dsh plugin --profile desktop add "path\to\dsh-boot-custom-1.0.1.tgz"
+dsh plugin --profile desktop add "path\to\dsh-boot-custom-1.0.2.tgz"
 ```
 
 3. **完全退出并重启**桌面端（包括托盘进程），不要只刷新页面。
@@ -69,8 +69,10 @@ dsh plugin --profile desktop add "path\to\dsh-boot-custom-1.0.1.tgz"
 npm install
 npm run typecheck
 npm run build
-npm test          # 54 项测试
-npm pack          # 生成 dsh-boot-custom-1.0.1.tgz
+npm test          # 69 项测试
+npm run test:coverage
+npm run test:e2e  # Playwright 首帧注入 E2E
+npm pack          # 生成 dsh-boot-custom-1.0.2.tgz
 ```
 
 ### 升级
@@ -156,6 +158,8 @@ dsh plugin --profile desktop remove dsh-boot-custom
 | 无设置插件 | 动画仍可启动；设置页等待 `settings.section` |
 | `prefers-reduced-motion` | 跳过视频/入场动画，隐藏装饰层，保留纯色遮罩 |
 
+逐项 OS/DPI/时区/locale 状态见 [`docs/compat-matrix.md`](docs/compat-matrix.md)。
+
 ## 项目结构
 
 ```text
@@ -223,15 +227,15 @@ npm run typecheck && npm test
 - Video rotation (local files, HTTP, data URIs) or 8 pure-CSS backdrop styles.
 - First-frame anti-flash mask injected through `webserver/index-inject`.
 - Configurable minimum boot duration (`bootDuration`, default 3 s), with the app page revealed only after both the animation and app-ready gates pass.
-- Any non-function key or pointer click skips once `allowSkip` and the countdown allow it.
-- Logo, greeting, real progress, countdown, six exit transitions, custom audio.
+- Any non-function, non-Tab key or pointer click skips once `allowSkip` and the countdown allow it.
+- Logo, greeting, real progress, countdown, five exit transitions, custom audio.
 - Full-window fixed overlay, Windows caption-strip fusion, in-settings preview.
-- 54 tests, MIT licensed.
+- 69 tests, MIT licensed.
 
 **Install**
 
 ```bash
-dsh plugin --profile desktop add "path/to/dsh-boot-custom-1.0.1.tgz"
+dsh plugin --profile desktop add "path/to/dsh-boot-custom-1.0.2.tgz"
 ```
 
 Fully restart the desktop app, then open **Settings → 开机动画**. The complete configuration manual is in [README.zh.md](README.zh.md).

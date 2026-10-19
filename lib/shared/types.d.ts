@@ -185,11 +185,15 @@ export declare const LIMITS: {
     readonly maxDataAudioChars: number;
     /** Maximum JSON body accepted by the host config route. */
     readonly maxBodyBytes: number;
+    /** Preferred total injected-config JSON size; larger values are degraded. */
+    readonly maxInjectedConfigChars: number;
+    /** Absolute injected-config ceiling; above this the animation is disabled. */
+    readonly maxInjectedConfigHardChars: number;
     /** Files larger than this get the "prefer a local path" warning. */
     readonly largeFileBytes: number;
     /** Hard ceiling for a single local file turned into base64 (matches 96 Mi encoded chars). */
     readonly maxBase64SourceBytes: number;
-    /** Total visible boot budget before the forced teardown. */
+    /** Total visible boot budget from the first-frame paint before forced teardown. */
     readonly hardTimeoutMs: 20000;
     /** Self-defence timeout of the injected first-frame mask. */
     readonly firstFrameFallbackMs: 12000;

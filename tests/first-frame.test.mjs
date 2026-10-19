@@ -174,7 +174,7 @@ test('caption fusion follows a light launch background', () => {
 
 test('injection rows follow the documented render order', () => {
   const config = normalizeConfig({ enabled: true })
-  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.1', writeMode: 'file' })
+  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.2', writeMode: 'file' })
   assert.deepEqual(
     rows.map((row) => `${row.kind}${row.placement === undefined ? '' : `:${row.placement}`}`),
     ['global', 'global', 'style', 'html:body', 'script:body'],
@@ -187,7 +187,7 @@ test('injection rows follow the documented render order', () => {
 
 test('a disabled plugin injects the config global but no mask', () => {
   const config = normalizeConfig({ enabled: false })
-  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.1', writeMode: 'settings' })
+  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.2', writeMode: 'settings' })
   assert.deepEqual(
     rows.map((row) => row.kind),
     ['global', 'global'],
@@ -198,9 +198,33 @@ test('a disabled plugin injects the config global but no mask', () => {
 test('rows are JSON-serializable (the table feeds two renderers)', () => {
   const rows = buildInjectionRows(normalizeConfig({ enabled: true }), {
     name: 'dsh-boot-custom',
-    version: '1.0.1',
+    version: '1.0.2',
     writeMode: 'file',
   })
   const json = JSON.parse(JSON.stringify(rows))
   assert.deepEqual(json[0].value.enabled, true)
+})
+
+test('oversized media is stripped from the injected config, not the stored value', () => {
+  const dataUrl = `data:video/mp4;base64,${'A'.repeat(17 * 1024 * 1024)}`
+  const config = normalizeConfig({
+    enabled: true,
+    videos: [`${dataUrl}1`, `${dataUrl}2`, `${dataUrl}3`],
+    audio: { enabled: true, source: 'custom', file: `data:audio/mpeg;base64,${'A'.repeat(1024)}` },
+  })
+  assert.equal(config.videos.length, 3, 'normalization preserves the persisted sources')
+  const rows = buildInjectionRows(config, {
+    name: 'dsh-boot-custom',
+    version: '1.0.2',
+    writeMode: 'file',
+  })
+  const injected = rows.find((row) => row.kind === 'global' && row.name === '__BOOT_ANIM_CONFIG__')
+  assert.ok(injected)
+  assert.equal(injected.value.videos.length, 0, 'data videos are omitted from the HTML payload')
+  assert.equal(injected.value.audio.file, '', 'data audio is omitted from the HTML payload')
+  assert.ok(
+    JSON.stringify(injected.value).length <= 32 * 1024 * 1024,
+    'degraded payload fits the soft injection budget',
+  )
+  assert.ok(rows.some((row) => row.kind === 'style'), 'CSS mask is still injected')
 })

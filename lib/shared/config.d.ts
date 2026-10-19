@@ -39,8 +39,10 @@ export declare function readFontFamily(value: unknown, fallback: string): string
  *
  * Accepted schemes: http(s), file, blob and `data:video|audio`. Relative paths
  * (including plugin-relative `./x.mp4`) pass because they have no scheme.
+ * The `kind` selects the matching base64 ceiling: audio has a much smaller
+ * accepted payload than video.
  */
-export declare function readMediaSource(value: unknown, fallback?: string): string;
+export declare function readMediaSource(value: unknown, fallback?: string, kind?: 'video' | 'audio'): string;
 /** Normalize one file/path source for the `videos` list, dropping duplicates. */
 export declare function readVideoList(value: unknown, fallback: string[]): string[];
 /** Normalize one line list (used by random greetings). */

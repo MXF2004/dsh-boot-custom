@@ -116,12 +116,15 @@ export function readFontFamily(value: unknown, fallback: string): string {
  *
  * Accepted schemes: http(s), file, blob and `data:video|audio`. Relative paths
  * (including plugin-relative `./x.mp4`) pass because they have no scheme.
+ * The `kind` selects the matching base64 ceiling: audio has a much smaller
+ * accepted payload than video.
  */
-export function readMediaSource(value: unknown, fallback = ''): string {
+export function readMediaSource(value: unknown, fallback = '', kind: 'video' | 'audio' = 'video'): string {
   if (typeof value !== 'string') return fallback
   const trimmed = value.trim()
   if (trimmed.length === 0) return fallback
-  if (trimmed.length > LIMITS.maxDataVideoChars) return fallback
+  const cap = kind === 'audio' ? LIMITS.maxDataAudioChars : LIMITS.maxDataVideoChars
+  if (trimmed.length > cap) return fallback
   if (/^data:/i.test(trimmed)) {
     return /^data:(?:video|audio)\/[a-z0-9.+-]+(?:;[a-z0-9=.+-]+)*,/i.test(trimmed) ? trimmed : fallback
   }
@@ -274,7 +277,7 @@ export function normalizeConfig(input: unknown): BootAnimationConfig {
     audio: {
       enabled: readBool(audio.enabled, base.audio.enabled),
       source: readEnum(audio.source, ['video', 'custom'] as const, base.audio.source),
-      file: readMediaSource(audio.file, base.audio.file),
+      file: readMediaSource(audio.file, base.audio.file, 'audio'),
       volume: clampNumber(audio.volume, 0, 100, 1, base.audio.volume),
       fade: readBool(audio.fade, base.audio.fade),
     },
@@ -549,7 +552,14 @@ export function contrastSymbolColor(background: string): string {
     g: parsed.g * alpha + over.g * (1 - alpha),
     b: parsed.b * alpha + over.b * (1 - alpha),
   }
-  return relativeLuminance(color) > 0.5 ? TITLEBAR_SYMBOL_DARK : TITLEBAR_SYMBOL_LIGHT
+  const light = parseCssColor(TITLEBAR_SYMBOL_LIGHT) ?? { r: 249, g: 250, b: 251, a: 1 }
+  const dark = parseCssColor(TITLEBAR_SYMBOL_DARK) ?? { r: 15, g: 17, b: 21, a: 1 }
+  const contrast = (l1: number, l2: number): number =>
+    (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
+  const luminance = relativeLuminance(color)
+  return contrast(luminance, relativeLuminance(light)) >= contrast(luminance, relativeLuminance(dark))
+    ? TITLEBAR_SYMBOL_LIGHT
+    : TITLEBAR_SYMBOL_DARK
 }
 
 /** Human-readable byte size used by the settings panel warnings. */

@@ -11,7 +11,7 @@
 export const PACKAGE_NAME = 'dsh-boot-custom'
 
 /** Release version mirrored into diagnostics and the injected meta row. */
-export const PLUGIN_VERSION = '1.0.1'
+export const PLUGIN_VERSION = '1.0.2'
 
 /** Settings namespace used on hosts that predate `ctx.configEditor`. */
 export const SETTINGS_NAMESPACE = 'boot-custom'

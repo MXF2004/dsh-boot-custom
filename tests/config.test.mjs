@@ -25,6 +25,7 @@ import {
 } from '../lib/shared/config.js'
 import { CSS_ANIMATION_STYLES } from '../lib/shared/css-effects.js'
 import { DEFAULT_CONFIG } from '../lib/shared/defaults.js'
+import { LIMITS } from '../lib/shared/types.js'
 
 /** A local date at a specific hour (month is irrelevant to the slot logic). */
 function atHour(hour) {
@@ -143,6 +144,18 @@ test('media sources accept only safe schemes', () => {
   assert.equal(readMediaSource('javascript:alert(1)'), '')
   assert.equal(readMediaSource('data:text/html;base64,AAAA'), '')
   assert.equal(readMediaSource('ftp://example.com/a.mp4'), '')
+})
+
+test('audio data URLs use the smaller audio cap', () => {
+  const prefix = 'data:audio/mpeg;base64,'
+  const tooLarge = prefix + 'A'.repeat(LIMITS.maxDataAudioChars - prefix.length + 1)
+  assert.equal(readMediaSource(tooLarge, '', 'audio'), '', 'audio payload over its own cap is rejected')
+  assert.equal(readMediaSource(prefix + 'AAAA', '', 'audio'), prefix + 'AAAA')
+  assert.equal(
+    readMediaSource(prefix + 'AAAA', '', 'video'),
+    prefix + 'AAAA',
+    'the same small source remains valid for the video reader',
+  )
 })
 
 test('video lists dedupe, drop unsafe entries and cap the count', () => {
@@ -273,8 +286,13 @@ test('caption glyphs adapt to the launch background', () => {
   assert.equal(contrastSymbolColor('rgba(0, 0, 0, 0.9)'), TITLEBAR_SYMBOL_LIGHT)
   assert.equal(contrastSymbolColor('white'), TITLEBAR_SYMBOL_DARK)
   assert.equal(contrastSymbolColor('black'), TITLEBAR_SYMBOL_LIGHT)
+  assert.equal(
+    contrastSymbolColor('#808080'),
+    TITLEBAR_SYMBOL_DARK,
+    'mid gray chooses the higher-contrast dark glyph instead of a fixed 0.5 threshold',
+  )
   // Unknown formats fall back to the light glyph (safe on a dark boot screen).
   assert.equal(contrastSymbolColor('transparent'), TITLEBAR_SYMBOL_LIGHT)
-  assert.equal(contrastSymbolColor('hsl(210 80% 60%)'), TITLEBAR_SYMBOL_LIGHT)
+  assert.equal(contrastSymbolColor('hsl(210 80% 60%)'), TITLEBAR_SYMBOL_DARK)
   assert.equal(contrastSymbolColor('not-a-color'), TITLEBAR_SYMBOL_LIGHT)
 })

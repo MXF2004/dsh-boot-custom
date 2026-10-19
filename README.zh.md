@@ -3,7 +3,7 @@
 > 本文是完整中文手册，包含全部配置项、运行时契约与排错。
 > GitHub 首页、快速开始和性能优化说明见 [README.md](README.md)；版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
-面向 DeepSeek Harness 桌面端的开机动画插件：多视频轮播、本地视频选择、播放速度、自定义音效、六种退场转场、Logo 文字、真实加载进度、跳过倒计时、分时段问候语，以及**首帧防白屏遮罩**。
+面向 DeepSeek Harness 桌面端的开机动画插件：多视频轮播、本地视频选择、播放速度、自定义音效、五种退场转场、Logo 文字、真实加载进度、跳过倒计时、分时段问候语，以及**首帧防白屏遮罩**。
 
 - 包名 / patch 行 id / 宿主导出名：**`dsh-boot-custom`**（三者完全一致）
 - 宿主入口：`src/index.ts` → `lib/index.js`（ESM）
@@ -85,8 +85,10 @@ dsh-boot-custom/
 npm install
 npm run typecheck      # 宿主 + 客户端严格类型检查
 npm run build          # 产出 lib/index.js 与 lib/client.js
-npm test               # 54 个测试（会先自动 build）
-npm pack               # 生成 dsh-boot-custom-1.0.1.tgz
+npm test               # 69 个测试（会先自动 build）
+npm run test:coverage  # node:test 覆盖率报告
+npm run test:e2e       # Playwright 首帧 + controller E2E（需浏览器）
+npm pack               # 生成 dsh-boot-custom-1.0.2.tgz
 ```
 
 构建细节：
@@ -153,7 +155,7 @@ npm run build
 npm pack
 
 # 安装到 desktop profile（路径换成你的实际路径）
-dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.1.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.2.tgz"
 ```
 
 本地开发时也可以直接装目录：
@@ -484,7 +486,7 @@ Logo / 问候语的垂直位置以 `--dba-titlebar` 之后的安全区为基准�
 - `<html>` 增加 `dba-previewing`，CSS 精确命中 `body > div:has([data-shortcut-modal="settings"])`；
 - 同时对该 portal 写入内联 `visibility:hidden / pointer-events:none / opacity:0`，覆盖不支持 `:has()` 的环境；
 - 不关闭 modal、不卸载面板，因此当前分区与草稿原样保留；
-- 预览期间点击任意位置或按任意非功能键可立即关闭预览（仅预览路径；真实开机仍受「允许跳过」与倒计时约束）；
+- 预览期间点击任意位置或按 Esc / 空格等非功能键可立即关闭预览（仅预览路径；真实开机仍受「允许跳过」与倒计时约束）；
 - 动画结束、跳过、视频结束、超时或 15s 安全计时任一到达，都会移除隐藏状态并恢复设置面板。
 
 ### 6.10 系统标题栏与右上角按钮融合
@@ -505,7 +507,7 @@ Windows 桌面端的最小化 / 最大化 / 关闭按钮是 **Electron 原生 ca
 
 - `prefers-reduced-motion: reduce`：不创建视频、不做入场动画、不呼吸；保留首帧纯色遮罩；app ready 后 0.1s 退场。
 - 倒计时 `role="status" aria-live="polite"`。
-- 任意非功能键（不限于 Esc / 空格；F1–F12 除外）或鼠标点击仅在动画运行、倒计时已解锁且 `document.activeElement` 不是 `input / textarea / select / contenteditable` 时生效。
+- 任意非功能键（不限于 Esc / 空格；F1–F12 除外；Tab 用于模态焦点循环）或鼠标点击仅在动画运行、倒计时已解锁且 `document.activeElement` 不是 `input / textarea / select / contenteditable` 时生效。
 
 ---
 
@@ -548,7 +550,7 @@ Windows 桌面端的最小化 / 最大化 / 关闭按钮是 **Electron 原生 ca
 npm test
 ```
 
-共 54 个测试：
+共 69 个测试：
 
 - `tests/config.test.mjs`：默认值、范围/步长、颜色/字体/URL 白名单、视频去重与上限、六时段、问候语三种模式、轮播游标、Windows 路径转 URL、原型污染、输入不可变性；新增 CSS 颜色解析、相对亮度与标题栏图标对比色、UNC/远程 `file://` 拒绝，以及中英文区域判断。
 - `tests/first-frame.test.mjs`：注入行顺序、启用/禁用分支、HTML 转义、无 `</script` / `</style`；`node:vm` 执行首帧脚本，验证 `end()` 认领顺序、12s 未认领自保、已认领不自保、重复安装幂等、只删除带标记的首帧样式；新增 `pointer-events:none`、纯 CSS 12s 兜底与透明标题栏探针规则。
@@ -559,6 +561,22 @@ npm test
 - `tests/preview-presentation.test.mjs`：用 esbuild 内存构建后直接测试真实 `preview-presentation.ts`，验证设置 portal 隐藏/精确恢复、焦点释放、重复调用与引用计数、以及找不到 portal 时的安全降级。
 - `tests/preview-controller.test.mjs`：内存打包真实 controller，验证预览在 allowSkip=false、10s 倒计时锁定时仍可立即关闭，并只触发一次 onDispose / onFinished、移除遮罩与标题栏融合；新增 CSS 模式 + 无视频时自定义音效仍会创建并播放。
 - `tests/css-effects.test.mjs`：校验 8 种风格均有标签与选择器规则、`none` 不生成动画规则、首帧注入只包含当前风格、输出不含 `</style`。
+- `tests/host-client-injection.test.mjs`：真实 `buildInjectionRows()` → JSON 序列化边界 → 真实 `env.ts` 消费，覆盖 `enabled=false`、`writeToken` 和字段一致性。
+- `tests/host-apply.test.mjs`：真实 `apply()` + fake cordis ctx，验证注入监听、路由注册、会话 token 与首帧表。
+- `tests/settings-route.integration.test.mjs`：真实 `node:http` + `registerConfigRoutes()` + 真实 `ClientConfigStore` 完成 save/reset，并验证错误 token 被拒绝。
+- `tests/countdown.test.mjs`：倒计时递减期间 live region 静默，解锁时只播报一次。
+- `tests/a11y-controls.test.mjs` / `tests/a11y-panel.test.mjs`：Row label/提示关联、按钮名称、Notice live region、完整设置面板的 axe WCAG A/AA 门禁。
+- `tests/ready-timeout.test.mjs` / `tests/timing.test.mjs`：注入时钟验证 4s UI 保底、9s 最小显示、预览固定寿命与 20s 硬超时从首帧起算。
+- `tests/e2e/injection.spec.ts` / `tests/e2e/boot.spec.ts`：Playwright 真实 Chromium/Edge 加载注入产物，验证首帧遮罩、指针穿透、全局配置、`</script>` 注入安全，以及真实 controller 的双闸门挂载/退场；3 个浏览器用例，不计入上面的 69 个 node:test 用例。
+
+### 测试与门禁命令
+
+```bash
+npm run typecheck
+npm test                    # 69 个 node:test
+npm run test:coverage       # 覆盖率报告
+npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chromium）
+```
 
 ### 契约核对来源
 
@@ -583,7 +601,9 @@ npm test
 | 无 settings 插件 | 设置页仍会向 `settings.section` 等待声明；动画与首帧不受影响 |
 | schemastery < 3.18.4 | `.volatile()` 自动退化，插件正常加载，仅热更新不可用 |
 
-> 说明：工程在当前机器上完成了构建、54 项自动化测试与 jsdom 真挂载冒烟；未在正在运行的桌面 GUI 内做安装回归（避免修改用户 profile）。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
+操作系统、DPI、时区和 locale 的逐项状态见 [`docs/compat-matrix.md`](docs/compat-matrix.md)。
+
+> 说明：工程在当前机器上完成了构建、69 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；未在正在运行的桌面 GUI 内做完整安装回归（避免修改用户 profile）。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
 
 ---
 

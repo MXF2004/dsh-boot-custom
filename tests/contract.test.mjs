@@ -90,6 +90,9 @@ test('the browser half exports inject = [slots] and apply', async () => {
 
   const React = {
     createElement: () => null,
+    createContext: (value) => ({ Provider: {}, Consumer: {}, _currentValue: value }),
+    useContext: (context) => context?._currentValue ?? null,
+    useId: () => 'test-id',
     useState: () => [null, () => undefined],
     useEffect: () => undefined,
     useRef: () => ({ current: null }),

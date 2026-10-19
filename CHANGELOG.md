@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.2] - 2026-10-19
+
+Test-and-a11y hardening release driven by the v1.0.1 audit.
+
+### Fixed
+
+- Inline config injection is bounded: >32 Mi-char payloads drop data/long media from the HTML copy, >128 Mi chars disable the animation for that render; persisted config is untouched.
+- Audio `data:` sources now use `maxDataAudioChars` (16 Mi) instead of the video ceiling.
+- The 20 s hard timeout counts from the first-frame paint, matching the documented budget.
+- The boot overlay traps Tab, makes the app root inert, restores the previous focus, and exposes a proper dialog label.
+- All settings controls receive names from their `Row` label; hints are wired with `aria-describedby`; icon buttons expose `aria-label`; notices use alert/status live regions.
+- Transition documentation now correctly says five styles (the implementation and `TransitionStyle` union have five).
+
+### Added
+
+- Host → client injection integration tests through the real JSON serialization boundary.
+- Real `node:http` + `ClientConfigStore` save/reset integration tests, including a rejected token.
+- Readiness clock seam with 4 s UI-deadline and minimum-visible-time tests; hard-timeout timing test.
+- axe-core WCAG A/AA gates for the controls and the full settings panel.
+- Playwright first-frame injection and real BootController E2E (mask, pointer transparency, globals, `</script>` safety, double-gate exit).
+- CI coverage step, Windows test job, Playwright job; `docs/compat-matrix.md`.
+- 69 node:test cases plus 3 Playwright browser cases.
+
 ## [1.0.1] - 2026-10-19
 
 Review-driven correctness, accessibility and local-security release.
