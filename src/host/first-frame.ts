@@ -32,6 +32,9 @@ export type IndexInjectionRow =
   | { kind: 'style'; text: string }
   | { kind: 'html'; placement: 'head' | 'body'; html: string }
 
+/** Marker used by the injected script to remove exactly its own stylesheet. */
+const STYLE_MARKER = 'dsh-boot-custom-first-frame-style'
+
 /** Render a multi-line text block safely (whitespace preserved by CSS). */
 function textBlock(value: string): string {
   return escapeHtml(value)
@@ -77,7 +80,7 @@ export function buildFirstFrameStyle(config: BootAnimationConfig): string {
     opacity: 0.92;
   }`
     : ''
-  return `
+  return `/* ${STYLE_MARKER} */
   html, body { background: ${playing.background} !important; }
   #${DOM_IDS.firstFrame} {
     position: fixed;
@@ -90,10 +93,18 @@ export function buildFirstFrameStyle(config: BootAnimationConfig): string {
     background: ${playing.background};
     overscroll-behavior: none;
     overflow: hidden;
-    pointer-events: auto;
+    /* Decorative only: never allow an unremoved mask to lock input. */
+    pointer-events: none;
     opacity: 1;
     contain: strict;
     --dba-fx-accent: ${logo.glowColor};
+    /* Pure-CSS self-defence: even if the injected script is blocked or
+       stripped, the opaque mask fades out and releases the screen. */
+    animation: dba-ff-timeout ${LIMITS.firstFrameFallbackMs}ms linear forwards;
+  }
+  @keyframes dba-ff-timeout {
+    0%, 99% { opacity: 1; visibility: visible; }
+    100% { opacity: 0; visibility: hidden; }
   }
   #${DOM_IDS.firstFrame} .dba-ff-inner {
     display: flex;
@@ -171,6 +182,7 @@ export function buildFirstFrameScript(): string {
     '(function () {',
     '  "use strict";',
     `  var ID = ${JSON.stringify(DOM_IDS.firstFrame)};`,
+    `  var STYLE = ${JSON.stringify(STYLE_MARKER)};`,
     `  var CLAIMED = ${JSON.stringify(GLOBALS.firstFrameClaimed)};`,
     `  var API = ${JSON.stringify(GLOBALS.firstFrame)};`,
     '  var g = globalThis;',
@@ -184,7 +196,8 @@ export function buildFirstFrameScript(): string {
     '      var list = typeof document.getElementsByTagName === "function" ? document.getElementsByTagName("style") : [];',
     '      for (var i = list.length - 1; i >= 0; i -= 1) {',
     '        var sheet = list[i];',
-    '        if (sheet && typeof sheet.textContent === "string" && sheet.textContent.indexOf(ID) >= 0 && sheet.parentNode) {',
+    '        var text = sheet && typeof sheet.textContent === "string" ? sheet.textContent.trimStart() : "";',
+    '        if (sheet && text.indexOf("/*") === 0 && text.indexOf(STYLE) >= 0 && sheet.parentNode) {',
     '          sheet.parentNode.removeChild(sheet);',
     '        }',
     '      }',

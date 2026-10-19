@@ -32,7 +32,7 @@ export type GreetingAnimation = 'fade' | 'typewriter';
 export type CountdownPosition = 'center' | 'bottom-right' | 'above-progress';
 /** Audio source: the video's own track or a dedicated sound file. */
 export type AudioSource = 'video' | 'custom';
-/** The five non-overlapping greeting periods of a day. */
+/** The six non-overlapping greeting periods of a day. */
 export type TimeSlot = 'dawn' | 'morning' | 'noon' | 'afternoon' | 'evening' | 'night';
 /** Per-period greeting copy. */
 export interface TimeSlotTexts {
@@ -158,8 +158,10 @@ export type ConfigWriteMode = 'config-editor' | 'settings' | 'file';
 /** Payload published on `window.__BOOT_ANIM_META__`. */
 export interface BootAnimationMeta {
     name: string;
-    version: number;
+    version: string;
     writeMode: ConfigWriteMode;
+    /** Random per-activation token required by the local config routes. */
+    writeToken?: string;
     /**
      * Epoch milliseconds of the index render that painted the first-frame mask.
      * `bootDuration` counts from this instant, so the mask's on-screen time is
@@ -185,7 +187,7 @@ export declare const LIMITS: {
     readonly maxBodyBytes: number;
     /** Files larger than this get the "prefer a local path" warning. */
     readonly largeFileBytes: number;
-    /** Hard ceiling for a single local file turned into base64. */
+    /** Hard ceiling for a single local file turned into base64 (matches 96 Mi encoded chars). */
     readonly maxBase64SourceBytes: number;
     /** Total visible boot budget before the forced teardown. */
     readonly hardTimeoutMs: 20000;

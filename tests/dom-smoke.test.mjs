@@ -80,7 +80,7 @@ globalThis.__BOOT_ANIM_CONFIG__ = {
 }
 globalThis.__BOOT_ANIM_META__ = {
   name: 'dsh-boot-custom',
-  version: 1,
+  version: '1.0.1',
   writeMode: 'file',
   // The first-frame mask has already been on screen for one second; that time
   // must count against bootDuration instead of adding a full extra delay.

@@ -98,6 +98,9 @@ export class AudioController {
       return
     }
     if (this.config.audio.source === 'custom') {
+      // Idempotent: the caller starts custom audio immediately in CSS mode and
+      // again from the video-ready path in video mode.
+      if (this.audio !== null || this.failed) return
       this.startCustom()
       return
     }

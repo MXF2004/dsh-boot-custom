@@ -133,6 +133,9 @@ test('font families cannot escape a CSS value', () => {
 test('media sources accept only safe schemes', () => {
   assert.equal(readMediaSource('https://example.com/a.mp4'), 'https://example.com/a.mp4')
   assert.equal(readMediaSource('file:///C:/videos/a.mp4'), 'file:///C:/videos/a.mp4')
+  assert.equal(readMediaSource('file://server/share/a.mp4'), '', 'remote file authority rejected')
+  assert.equal(readMediaSource('\\\\server\\share\\a.mp4'), '', 'UNC path rejected')
+  assert.equal(readMediaSource('//server/share/a.mp4'), '', 'forward-slash UNC rejected')
   assert.equal(readMediaSource('C:\\videos\\a.mp4'), 'C:\\videos\\a.mp4')
   assert.equal(readMediaSource('./assets/intro.webm'), './assets/intro.webm')
   assert.equal(readMediaSource('data:video/mp4;base64,AAAA'), 'data:video/mp4;base64,AAAA')
@@ -217,6 +220,9 @@ test('video rotation: sequence wraps, random stays in range', () => {
 test('Windows paths become usable file URLs', () => {
   assert.equal(toMediaUrl('C:\\videos\\intro clip.mp4'), 'file:///C:/videos/intro%20clip.mp4')
   assert.equal(toMediaUrl('file:///C:/videos/a.mp4'), 'file:///C:/videos/a.mp4')
+  assert.equal(toMediaUrl('file://server/share/a.mp4'), '', 'remote file authority rejected')
+  assert.equal(toMediaUrl('\\\\server\\share\\a.mp4'), '', 'UNC path rejected')
+  assert.equal(toMediaUrl('//server/share/a.mp4'), '', 'forward-slash UNC rejected')
   assert.equal(toMediaUrl('https://example.com/a.mp4'), 'https://example.com/a.mp4')
   assert.equal(toMediaUrl('  ./a.webm  '), './a.webm')
 })

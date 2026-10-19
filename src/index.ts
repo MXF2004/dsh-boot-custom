@@ -18,6 +18,8 @@
  * @module dsh-boot-custom
  */
 
+import { randomBytes } from 'node:crypto'
+
 import { PACKAGE_NAME, PLUGIN_VERSION, SETTINGS_NAMESPACE } from './shared/constants.js'
 import { resolveGreeting } from './shared/config.js'
 import type { BootAnimationMeta } from './shared/types.js'
@@ -88,12 +90,14 @@ function applyImpl(ctx: HostContext, config: unknown): void {
     console.warn('[dsh-boot-custom] config store cleanup could not be registered:', error)
   }
 
-  registerConfigRoutes(ctx, store)
+  const writeToken = randomBytes(24).toString('hex')
+  registerConfigRoutes(ctx, store, writeToken)
 
   const meta: BootAnimationMeta = {
     name: PACKAGE_NAME,
     version: PLUGIN_VERSION,
     writeMode: store.mode,
+    writeToken,
   }
 
   // First-frame injection. Runs synchronously on every index render, so the

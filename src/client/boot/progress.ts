@@ -183,6 +183,5 @@ export class ProgressTracker {
 
 /** Augment the global for the injected-state flag (set by the controller). */
 declare global {
-  // eslint-disable-next-line no-var
   var __BOOT_ANIM_INJECTED_READY__: boolean | undefined
 }

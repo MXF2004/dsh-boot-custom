@@ -42,11 +42,12 @@ export function readInjectedMeta(): BootAnimationMeta | undefined {
   const meta = globals().__BOOT_ANIM_META__
   if (!isRecord(meta)) return undefined
   const name = typeof meta.name === 'string' ? meta.name : ''
-  const version = typeof meta.version === 'number' ? meta.version : 0
+  const version = typeof meta.version === 'string' ? meta.version : ''
   const writeMode =
     meta.writeMode === 'config-editor' || meta.writeMode === 'settings' || meta.writeMode === 'file'
       ? meta.writeMode
       : 'file'
+  const writeToken = typeof meta.writeToken === 'string' && meta.writeToken.length > 0 ? meta.writeToken : undefined
   const greeting = typeof meta.greeting === 'string' ? meta.greeting : undefined
   const startedAt =
     typeof meta.startedAt === 'number' && Number.isFinite(meta.startedAt) ? meta.startedAt : undefined
@@ -54,6 +55,7 @@ export function readInjectedMeta(): BootAnimationMeta | undefined {
     name,
     version,
     writeMode,
+    ...(writeToken === undefined ? {} : { writeToken }),
     ...(greeting === undefined ? {} : { greeting }),
     ...(startedAt === undefined ? {} : { startedAt }),
   }
@@ -72,13 +74,13 @@ export function prefersReducedMotion(): boolean {
 export function isChinese(): boolean {
   try {
     const language = navigator.language || document.documentElement.lang || ''
-    return !/^en\b/i.test(language)
+    return /^zh(?:[-_]|$)/i.test(language)
   } catch {
     return true
   }
 }
 
-/** Pick the Chinese string unless the shell is explicitly English. */
+/** Pick the Chinese string unless the shell is explicitly Chinese. */
 export function pickText(zh: string, en: string): string {
   return isChinese() ? zh : en
 }

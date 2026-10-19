@@ -60,7 +60,9 @@ export class Countdown {
     element.dataset.position = config.countdown.position
     element.dataset.progressPosition = config.progress.position
     element.setAttribute('role', 'status')
-    element.setAttribute('aria-live', 'polite')
+    // Do not announce every one-second decrement; announce only the actionable
+    // "click to skip" state once the countdown unlocks.
+    element.setAttribute('aria-live', 'off')
     element.style.setProperty('--dba-countdown-color', config.countdown.color)
     element.style.setProperty('--dba-countdown-size', `${String(config.countdown.fontSize)}px`)
     if (config.countdown.glow) {
@@ -119,6 +121,12 @@ export class Countdown {
     this.unlocked = true
     if (this.numberNode !== null) this.numberNode.textContent = ''
     if (this.hintNode !== null) this.hintNode.textContent = pickText(UNLOCK_TEXT.zh, UNLOCK_TEXT.en)
+    try {
+      this.element?.setAttribute('aria-live', 'polite')
+      this.element?.setAttribute('aria-atomic', 'true')
+    } catch {
+      // Ignore.
+    }
     try {
       this.options.onUnlock()
     } catch (error) {

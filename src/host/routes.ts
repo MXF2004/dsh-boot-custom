@@ -84,8 +84,35 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /**
- * Reject cross-origin writes. A same-origin `fetch` always sends an Origin
- * header; a mismatching one means another page is driving the local server.
+ * True when the request's Host header is a loopback authority. DNS rebinding
+ * keeps the browser's Origin but changes Host; rejecting non-loopback Hosts
+ * prevents a remote page from reaching the local write server.
+ */
+export function isLoopbackHost(value: unknown): boolean {
+  if (typeof value !== 'string' || value.length === 0) return false
+  const host = value.trim().toLowerCase()
+  let name = host
+  if (host.startsWith('[')) {
+    const end = host.indexOf(']')
+    if (end < 0) return false
+    name = host.slice(0, end + 1)
+  } else {
+    const first = host.indexOf(':')
+    if (first >= 0 && first === host.lastIndexOf(':')) name = host.slice(0, first)
+  }
+  return name === '127.0.0.1' || name === 'localhost' || name === '[::1]' || name === '::1'
+}
+
+/** True when the request carries the host-generated session token. */
+function hasWriteToken(req: IncomingMessage, token: string): boolean {
+  if (token.length === 0) return false
+  const header = req.headers['x-dsh-boot-custom-token']
+  return typeof header === 'string' && header === token
+}
+
+/**
+ * Reject cross-origin writes. A same-origin `fetch` sends an Origin header; a
+ * mismatching one means another page is driving the local server.
  */
 function isSameOrigin(req: IncomingMessage): boolean {
   const origin = req.headers.origin
@@ -99,9 +126,18 @@ function isSameOrigin(req: IncomingMessage): boolean {
   }
 }
 
-/** Method + content-type + origin guard shared by the write routes. */
-function authorizeWrite(req: IncomingMessage): string | undefined {
+/** Host + session-token guard shared by reads and writes. */
+function authorizeRequest(req: IncomingMessage, token: string): string | undefined {
+  if (!isLoopbackHost(req.headers.host)) return 'loopback host required'
+  if (!hasWriteToken(req, token)) return 'missing plugin session token'
   if (!isSameOrigin(req)) return 'cross-origin request refused'
+  return undefined
+}
+
+/** Method + content-type + host/token guard shared by the write routes. */
+function authorizeWrite(req: IncomingMessage, token: string): string | undefined {
+  const denied = authorizeRequest(req, token)
+  if (denied !== undefined) return denied
   const contentType = req.headers['content-type']
   if (typeof contentType !== 'string' || !contentType.toLowerCase().startsWith('application/json')) {
     return 'content-type must be application/json'
@@ -113,7 +149,11 @@ function authorizeWrite(req: IncomingMessage): string | undefined {
 }
 
 /** Register the config routes; no-op when the host has no web server. */
-export function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigStore): void {
+export function registerConfigRoutes(
+  ctx: RouteHostContext,
+  store: RouteConfigStore,
+  writeToken: string,
+): void {
   const server = ctx.webServer
   if (server === undefined || server === null || typeof server.register !== 'function') {
     console.warn('[dsh-boot-custom] no web server: the settings panel will read injected config only')
@@ -124,6 +164,11 @@ export function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigSt
     try {
       if (req.method !== 'GET') {
         sendJson(res, 405, { ok: false, error: 'method not allowed' })
+        return
+      }
+      const denied = authorizeRequest(req, writeToken)
+      if (denied !== undefined) {
+        sendJson(res, 403, { ok: false, error: denied })
         return
       }
       sendJson(res, 200, { ok: true, writeMode: store.mode, config: store.current() })
@@ -139,7 +184,7 @@ export function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigSt
         sendJson(res, 405, { ok: false, error: 'method not allowed' })
         return
       }
-      const denied = authorizeWrite(req)
+      const denied = authorizeWrite(req, writeToken)
       if (denied !== undefined) {
         sendJson(res, 403, { ok: false, error: denied })
         return
@@ -168,7 +213,7 @@ export function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigSt
         sendJson(res, 405, { ok: false, error: 'method not allowed' })
         return
       }
-      const denied = authorizeWrite(req)
+      const denied = authorizeWrite(req, writeToken)
       if (denied !== undefined) {
         sendJson(res, 403, { ok: false, error: denied })
         return

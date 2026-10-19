@@ -8,8 +8,8 @@
  */
 /** Package name, `cordis.patch.yml` row id and host export `name`. */
 export declare const PACKAGE_NAME = "dsh-boot-custom";
-/** Version mirrored into diagnostics and the injected meta row. */
-export declare const PLUGIN_VERSION = 1;
+/** Release version mirrored into diagnostics and the injected meta row. */
+export declare const PLUGIN_VERSION = "1.0.1";
 /** Settings namespace used on hosts that predate `ctx.configEditor`. */
 export declare const SETTINGS_NAMESPACE = "boot-custom";
 /** Directory name under the profile dir used by the JSON fallback store. */

@@ -994,7 +994,7 @@ export function createSettingsPanel(deps: PanelDeps): React.ComponentType<{ clos
         h(
           Notice,
           { tone: 'info' },
-          '音效与视频画面同步播放、暂停与结束；加载失败会自动静音，不影响动画。浏览器自动播放策略可能拒绝有声播放，此时将静音降级。',
+          '自定义音效在 CSS 模式（即使没有视频）下也会播放；视频音轨与画面同步播放、暂停与结束。加载失败会自动静音，不影响动画。浏览器自动播放策略可能拒绝有声播放，此时将静音降级。',
         ),
       ),
 

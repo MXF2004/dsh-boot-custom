@@ -106,6 +106,12 @@ export declare class HostConfigStore {
     private unsubscribe;
     private value;
     private disposed;
+    /** Cache the parsed JSON file until its size/mtime changes. */
+    private fileCache;
+    /** An oversized file is preserved, never silently overwritten. */
+    private fileOversized;
+    /** Set after reset/migration so a file that could not be deleted is ignored. */
+    private fileIgnored;
     /**
      * @param ctx - host context (settings / configEditor are optional).
      * @param entryConfig - the `config` argument handed to `apply`.
@@ -127,6 +133,8 @@ export declare class HostConfigStore {
     dispose(): void;
     /** Read (never throw on) the JSON fallback document. */
     private readFile;
+    /** Delete the legacy JSON document after migration/reset. */
+    private removeFile;
     /** Atomically write the JSON fallback document. */
     private writeFile;
 }

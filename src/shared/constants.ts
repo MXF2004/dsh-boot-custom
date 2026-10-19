@@ -10,8 +10,8 @@
 /** Package name, `cordis.patch.yml` row id and host export `name`. */
 export const PACKAGE_NAME = 'dsh-boot-custom'
 
-/** Version mirrored into diagnostics and the injected meta row. */
-export const PLUGIN_VERSION = 1
+/** Release version mirrored into diagnostics and the injected meta row. */
+export const PLUGIN_VERSION = '1.0.1'
 
 /** Settings namespace used on hosts that predate `ctx.configEditor`. */
 export const SETTINGS_NAMESPACE = 'boot-custom'

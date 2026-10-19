@@ -84,7 +84,6 @@ export function readEnum<T extends string>(value: unknown, allowed: readonly T[]
 /** Strip control characters (newlines/tabs preserved) and cap the length. */
 export function readText(value: unknown, fallback: string, maxLength: number): string {
   if (typeof value !== 'string') return fallback
-  // eslint-disable-next-line no-control-regex
   const cleaned = value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
   return cleaned.length > maxLength ? cleaned.slice(0, maxLength) : cleaned
 }
@@ -126,10 +125,13 @@ export function readMediaSource(value: unknown, fallback = ''): string {
   if (/^data:/i.test(trimmed)) {
     return /^data:(?:video|audio)\/[a-z0-9.+-]+(?:;[a-z0-9=.+-]+)*,/i.test(trimmed) ? trimmed : fallback
   }
+  // Reject UNC paths and file URLs with a remote authority: they can trigger
+  // outbound SMB/NTLM traffic from the desktop renderer.
+  if (/^\\\\/.test(trimmed) || /^\/\//.test(trimmed)) return fallback
+  if (/^file:\/\/[^/]/i.test(trimmed)) return fallback
   if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !/^[a-z]:[\\/]/i.test(trimmed)) {
     return /^(?:https?|file|blob|dsh-plugin):/i.test(trimmed) ? trimmed : fallback
   }
-  if (/^(?:javascript|vbscript|data\s*):/i.test(trimmed)) return fallback
   return trimmed
 }
 
@@ -372,7 +374,7 @@ export function isDataUrl(value: string): boolean {
 /** True when the source is a local filesystem path or `file:` URL. */
 export function isLocalPath(value: string): boolean {
   const trimmed = value.trim()
-  return /^file:/i.test(trimmed) || /^[a-z]:[\\/]/i.test(trimmed) || /^\\\\/.test(trimmed)
+  return /^file:/i.test(trimmed) || /^[a-z]:[\\/]/i.test(trimmed)
 }
 
 /**
@@ -383,15 +385,16 @@ export function isLocalPath(value: string): boolean {
 export function toMediaUrl(value: string): string {
   const trimmed = value.trim()
   if (trimmed.length === 0) return ''
-  if (/^file:/i.test(trimmed)) return trimmed
+  if (/^file:/i.test(trimmed)) {
+    // `file:///...` (empty authority) only; reject remote file authorities.
+    return /^file:\/\/[^/]/i.test(trimmed) ? '' : trimmed
+  }
   if (/^[a-z]:[\\/]/i.test(trimmed)) {
     const normalized = trimmed.replace(/\\/g, '/')
     return encodeURI(`file:///${normalized}`)
   }
-  if (/^\\\\/.test(trimmed)) {
-    const normalized = trimmed.replace(/\\/g, '/')
-    return encodeURI(`file:${normalized}`)
-  }
+  // UNC paths are deliberately not converted; they can leak NTLM credentials.
+  if (/^\\\\/.test(trimmed) || /^\/\//.test(trimmed)) return ''
   return trimmed
 }
 

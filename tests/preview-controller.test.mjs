@@ -115,3 +115,73 @@ test('a preview dismisses immediately, tears down and reports onDispose/onFinish
   controller.dispose()
   host.remove()
 })
+
+test('custom audio starts in CSS mode even without a video', async () => {
+  const host = window.document.createElement('div')
+  window.document.body.appendChild(host)
+  const previousAudio = globalThis.Audio
+  let created = 0
+  let played = 0
+  class AudioStub {
+    constructor() {
+      created += 1
+      this.volume = 0
+      this.currentTime = 0
+      this.preload = ''
+      this.loop = false
+    }
+    addEventListener() {}
+    load() {}
+    play() {
+      played += 1
+      return Promise.resolve()
+    }
+    pause() {}
+    removeAttribute() {}
+  }
+  globalThis.Audio = AudioStub
+
+  try {
+    const config = normalizeConfig({
+      enabled: true,
+      mode: 'css',
+      videos: [],
+      audio: {
+        enabled: true,
+        source: 'custom',
+        file: 'https://example.test/boot.mp3',
+        volume: 80,
+        fade: false,
+      },
+      countdown: { enabled: false },
+      progress: { enabled: false },
+      transition: { style: 'fade', duration: 0.1 },
+    })
+    let disposed = 0
+    const controller = new BootController({
+      ctx: {
+        on() {
+          return () => undefined
+        },
+      },
+      getConfig: () => config,
+      onFinished: () => undefined,
+    })
+    const detach = controller.attach(host)
+    controller.playPreview(config, () => {
+      disposed += 1
+    })
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    assert.equal(created, 1, 'a custom audio element was created')
+    assert.equal(played, 1, 'custom audio played even with mode=css and no videos')
+
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    assert.equal(disposed, 1)
+    detach()
+    controller.dispose()
+  } finally {
+    globalThis.Audio = previousAudio
+    host.remove()
+  }
+})

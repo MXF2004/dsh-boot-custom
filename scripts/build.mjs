@@ -97,7 +97,12 @@ async function buildClient() {
   console.log('[build] client → lib/client.js')
 }
 
-rmSync(libDir, { recursive: true, force: true })
-if (!clientOnly) buildHost()
+if (!clientOnly) {
+  rmSync(libDir, { recursive: true, force: true })
+  buildHost()
+} else {
+  // `--client-only` must not touch the host artifacts (lib/index.js, lib/host/*).
+  mkdirSync(libDir, { recursive: true })
+}
 await buildClient()
 console.log(`[build] ${pkg.name}@${pkg.version} ready`)

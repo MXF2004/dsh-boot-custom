@@ -125,8 +125,10 @@ function buildOverlay(config: BootAnimationConfig, reducedMotion: boolean): { re
   root.dataset.mode = config.mode
   root.dataset.state = 'running'
   root.dataset.skippable = 'false'
-  root.setAttribute('role', 'presentation')
+  root.setAttribute('role', 'dialog')
+  root.setAttribute('aria-modal', 'true')
   root.setAttribute('aria-label', pickText('开机动画', 'Boot animation'))
+  root.tabIndex = -1
   setVar(root, '--dba-bg', config.playing.background)
   setVar(root, '--dba-fx-accent', config.logo.glowColor)
   setVar(root, '--dba-duration', `${config.transition.duration}s`)
@@ -366,6 +368,13 @@ export class BootController {
       run.refs.logoText.textContent = config.logo.text
       run.refs.logo.style.fontSize = `${config.logo.fontSize}px`
       run.refs.logo.style.color = config.logo.color
+      run.greetingFull = resolveGreeting(config)
+      run.refs.greeting.textContent = run.greetingFull
+      setTextVisibility(
+        run.refs,
+        config.logo.enabled && (!run.videoPlanned || config.logo.overlayInVideo),
+        config.greeting.enabled && (!run.videoPlanned || config.greeting.overlayInVideo),
+      )
       // With a live video the sampled frame owns the caption contrast; only a
       // video-less preview follows the configured background immediately.
       if (run.video === null || run.video.video() === null) {
@@ -450,6 +459,30 @@ export class BootController {
       this.endRun('mount-failed', false)
       return
     }
+    try {
+      refs.root.focus({ preventScroll: true })
+    } catch {
+      // Focus is an enhancement; the overlay still works without it.
+    }
+
+    // Keep keyboard focus out of the app behind the boot screen. The settings
+    // modal is body-level and is hidden separately during previews.
+    try {
+      const background = document.getElementById('root')
+      if (background instanceof HTMLElement) {
+        const hadInert = background.hasAttribute('inert')
+        const previousAria = background.getAttribute('aria-hidden')
+        background.setAttribute('inert', '')
+        background.setAttribute('aria-hidden', 'true')
+        ledger.add(() => {
+          if (!hadInert) background.removeAttribute('inert')
+          if (previousAria === null) background.removeAttribute('aria-hidden')
+          else background.setAttribute('aria-hidden', previousAria)
+        })
+      }
+    } catch {
+      // A different app root shape only loses the focus trap.
+    }
     this.updateSafeArea()
 
     // Blend the native caption strip into the full-window boot surface. The
@@ -518,6 +551,12 @@ export class BootController {
     // whether the video element may carry sound.
     const audio = new AudioController(config, ledger)
     run.audio = audio
+    // Custom audio is independent of the video layer. Start it immediately so
+    // CSS mode, an empty video list, a failed video, or reduced motion still
+    // play the selected track. Video-track audio still starts in onReady.
+    if (config.audio.source === 'custom') {
+      audio.start()
+    }
 
     if (videoPlanned) {
       const video = new VideoLayer(refs.media, config, ledger, {
@@ -708,15 +747,20 @@ export class BootController {
     // bounded (about 1.6s total).
     const step = Math.max(18, Math.min(48, Math.round(1600 / text.length)))
     let index = 0
-    run.ledger.interval(() => {
-      if (this.run !== run || run.state !== 'running') return
+    const timer = window.setInterval(() => {
+      if (this.run !== run || run.state !== 'running') {
+        window.clearInterval(timer)
+        return
+      }
       index += 1
       run.refs.greeting.textContent = text.slice(0, index)
       run.refs.greeting.appendChild(caret)
       if (index >= text.length) {
+        window.clearInterval(timer)
         caret.remove()
       }
     }, step)
+    run.ledger.add(() => window.clearInterval(timer))
   }
 
   /** Begin the configured exit transition. */
@@ -824,11 +868,13 @@ export class BootController {
     }
   }
 
-  /** Any key skips with the documented focus/countdown guards. */
+  /** Any non-function key skips with the documented focus/countdown guards. */
   private onKeyDown(event: KeyboardEvent): void {
     const run = this.run
     if (run === null || run.state !== 'running') return
     if (event.defaultPrevented || event.isComposing) return
+    // Keep browser/developer function keys (F1–F12) out of the skip gesture.
+    if (/^F(?:[1-9]|1[0-2])$/.test(event.key)) return
     // A preview ignores the editable-target guard: the Settings modal may
     // still hold focus in its (now hidden) form, and a key must still dismiss
     // the preview rather than being swallowed by a stale input.

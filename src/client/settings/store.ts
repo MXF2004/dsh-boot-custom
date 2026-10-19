@@ -79,8 +79,14 @@ export class ClientConfigStore {
 
   /** How writes are persisted right now. */
   get writeMode(): ConfigWriteMode {
-    if (this.scope !== null && this.scopeReady) return 'settings'
-    return this.injectedMeta?.writeMode === 'config-editor' ? 'config-editor' : 'file'
+    if (this.canUseScope()) return 'settings'
+    const mode = this.injectedMeta?.writeMode
+    return mode === 'settings' || mode === 'config-editor' ? mode : 'file'
+  }
+
+  /** The host's actual persistence seam decides; a stale scope must not win. */
+  private canUseScope(): boolean {
+    return this.scope !== null && this.scopeReady && this.injectedMeta?.writeMode !== 'file'
   }
 
   /** The current configuration. */
@@ -163,7 +169,7 @@ export class ClientConfigStore {
     try {
       const response = await fetch(routeUrl(ROUTES.config), {
         method: 'GET',
-        headers: { accept: 'application/json' },
+        headers: { accept: 'application/json', ...this.authHeaders() },
         cache: 'no-store',
       })
       if (!response.ok) return
@@ -185,7 +191,7 @@ export class ClientConfigStore {
     this.publish(normalized)
     this.setStatus('saving', '')
     try {
-      if (this.scope !== null && this.scopeReady) {
+      if (this.canUseScope()) {
         await this.writeScope(normalized)
       } else {
         await this.writeRoute(ROUTES.config, { config: normalized })
@@ -203,7 +209,7 @@ export class ClientConfigStore {
     if (this.disposed) return
     this.setStatus('saving', '')
     try {
-      if (this.scope !== null && this.scopeReady) {
+      if (this.canUseScope()) {
         await this.clearScope()
       } else {
         await this.writeRoute(ROUTES.reset, {})
@@ -300,6 +306,12 @@ export class ClientConfigStore {
     for (const key of keys) await scope.unset(key)
   }
 
+  /** Headers proving this request came from the host-injected page. */
+  private authHeaders(): Record<string, string> {
+    const token = this.injectedMeta?.writeToken
+    return token === undefined || token.length === 0 ? {} : { 'x-dsh-boot-custom-token': token }
+  }
+
   /** POST to a host route and adopt the returned configuration. */
   private async writeRoute(path: string, body: unknown): Promise<void> {
     const response = await fetch(routeUrl(path), {
@@ -308,6 +320,7 @@ export class ClientConfigStore {
         'content-type': 'application/json',
         // Required by the host: proves a same-origin script made the request.
         'x-dsh-boot-custom': '1',
+        ...this.authHeaders(),
       },
       body: JSON.stringify(body),
     })

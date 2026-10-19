@@ -103,6 +103,11 @@ test('the browser half exports inject = [slots] and apply', async () => {
   assert.equal(typeof clientExports.apply, 'function')
 })
 
+test('the injected release version matches package.json', async () => {
+  const { PLUGIN_VERSION } = await import('../lib/shared/constants.js')
+  assert.equal(PLUGIN_VERSION, pkg.version)
+})
+
 test('the host build keeps schemastery external and emits ESM', () => {
   const host = read('lib/index.js')
   const schema = read('lib/host/schema.js')

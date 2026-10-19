@@ -150,6 +150,22 @@ export class OverlayManager {
     }
     this.pending = { config, onDispose }
     this.ensure()
+    // If the entry was already registered while its host was between mount and
+    // unmount, `onAttached` will not fire again. Poll briefly for attachment so
+    // a preview requested in that window is not lost.
+    if (this.registered) {
+      let attempts = 0
+      const retry = (): void => {
+        if (this.disposed || this.pending === null) return
+        if (controller.attached) {
+          this.onAttached()
+          return
+        }
+        attempts += 1
+        if (attempts < 20) window.setTimeout(retry, 50)
+      }
+      window.setTimeout(retry, 0)
+    }
   }
 
   /** Unregister the slot entry (called when a run finished). */

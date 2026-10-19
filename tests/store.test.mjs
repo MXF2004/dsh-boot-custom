@@ -8,7 +8,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -156,6 +156,51 @@ test('the settings fallback reads overrides, writes through replace and watches 
     await store.reset()
     assert.deepEqual(replaced, {}, 'reset clears the user section so schema defaults re-apply')
     assert.equal(store.current().logo.text, DEFAULT_CONFIG.logo.text)
+    store.dispose()
+  })
+})
+
+test('reset removes the legacy config.json so old values cannot return', async () => {
+  await withTempProfile(async (dir) => {
+    const configDir = join(dir, 'boot-custom')
+    const configPath = join(configDir, 'config.json')
+    mkdirSync(configDir, { recursive: true })
+    writeFileSync(configPath, JSON.stringify({ logo: { text: 'LEGACY-FILE' } }), 'utf8')
+
+    let user = { logo: { text: 'FromSettings' } }
+    const scope = {
+      get() {
+        return { ...DEFAULT_CONFIG, ...user }
+      },
+      replace(section) {
+        user = section
+        return Promise.resolve()
+      },
+      update(patch) {
+        user = { ...user, ...patch }
+        return Promise.resolve()
+      },
+    }
+    const store = new HostConfigStore(
+      {
+        settings: {
+          register() {
+            return scope
+          },
+          describe() {
+            return [{ ns: 'boot-custom', user }]
+          },
+        },
+      },
+      {},
+    )
+    assert.equal(store.current().logo.text, 'FromSettings')
+    assert.equal(existsSync(configPath), true)
+
+    await store.reset()
+    assert.equal(existsSync(configPath), false, 'reset deletes the legacy JSON layer')
+    store.refresh()
+    assert.equal(store.current().logo.text, DEFAULT_CONFIG.logo.text, 'the old file cannot resurrect values')
     store.dispose()
   })
 })

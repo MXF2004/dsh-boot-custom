@@ -3,7 +3,7 @@
 > 本文是完整中文手册，包含全部配置项、运行时契约与排错。
 > GitHub 首页、快速开始和性能优化说明见 [README.md](README.md)；版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
-面向 DeepSeek Harness 桌面端的开机动画插件：多视频轮播、本地视频选择、播放速度、自定义音效、五种退场转场、Logo 文字、真实加载进度、跳过倒计时、分时段问候语，以及**首帧防白屏遮罩**。
+面向 DeepSeek Harness 桌面端的开机动画插件：多视频轮播、本地视频选择、播放速度、自定义音效、六种退场转场、Logo 文字、真实加载进度、跳过倒计时、分时段问候语，以及**首帧防白屏遮罩**。
 
 - 包名 / patch 行 id / 宿主导出名：**`dsh-boot-custom`**（三者完全一致）
 - 宿主入口：`src/index.ts` → `lib/index.js`（ESM）
@@ -25,7 +25,7 @@
 | 转场 | 平滑淡入 / 上滑退场 / 缩放消散 / 黑场过渡 / 模糊渐隐；0.1–2s、默认 0.3s；只用 transform / opacity / filter，带 `will-change` |
 | Logo | 多行文字、字号、颜色、发光及颜色、垂直位置、字体、视频模式水印叠加、独立开关；淡入 + 呼吸 |
 | 进度条 | 纤细线条 / 圆角胶囊 / 渐变光效；前景色、轨道色、顶部/底部、百分比开关、真实进度开关；真实信号 + 平滑缓动 |
-| 跳过倒计时 | 0–10s；启动即计时，期间锁定跳过；结束后任意键或鼠标点击即可跳过；app ready 与动画时长同时满足才退场；中央 / 右下 / 进度条上方；独立字号、颜色、发光、提示文字 |
+| 跳过倒计时 | 0–10s；启动即计时，期间锁定跳过；结束后任意非功能键或鼠标点击即可跳过；app ready 与动画时长同时满足才退场；中央 / 右下 / 进度条上方；独立字号、颜色、发光、提示文字 |
 | 进入时机 | 启动动画至少播放 `bootDuration` 秒（默认 3s，可设 0–18s）；应用未就绪时继续等待；两者都满足后才显示软件页面 |
 | 问候语 | 固定 / 分时段（凌晨、早晨、中午、下午、晚上、深夜）/ 随机语录；多行、Emoji；淡入上浮 / 打字机；独立开关与垂直位置；视频模式半透明叠加且层级低于 Logo |
 | 首帧 | 宿主向 `webserver/index-inject` 注入 `global / style / html / script` 行；第一帧即遮罩；`end()` 交接 + 12s 未认领自保；不修改 `dist/index.html` |
@@ -75,7 +75,7 @@ dsh-boot-custom/
 
 ### 环境
 
-- Node.js `^22.19.0 || >=24.0.0`
+- Node.js `^22.13.0 || >=24.0.0`
 - npm（或 pnpm）
 - 仅构建需要联网安装 devDependencies
 
@@ -85,8 +85,8 @@ dsh-boot-custom/
 npm install
 npm run typecheck      # 宿主 + 客户端严格类型检查
 npm run build          # 产出 lib/index.js 与 lib/client.js
-npm test               # 49 个测试（会先自动 build）
-npm pack               # 生成 dsh-boot-custom-1.0.0.tgz
+npm test               # 54 个测试（会先自动 build）
+npm pack               # 生成 dsh-boot-custom-1.0.1.tgz
 ```
 
 构建细节：
@@ -153,7 +153,7 @@ npm run build
 npm pack
 
 # 安装到 desktop profile（路径换成你的实际路径）
-dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.0.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.1.tgz"
 ```
 
 本地开发时也可以直接装目录：
@@ -219,7 +219,7 @@ dsh plugin --profile desktop remove dsh-boot-custom
 | --- | --- | --- |
 | `enabled` | `true` | 总开关。关闭后宿主不注入首帧遮罩，客户端立即认领并退出 |
 | `mode` | `css` | `css` 纯 CSS 动画；`video` 视频轮播 |
-| `allowSkip` | `true` | 关闭后倒计时隐藏，点击 / 任意键全部无效 |
+| `allowSkip` | `true` | 关闭后倒计时隐藏，点击 / 任意非功能键全部无效 |
 | `bootDuration` | `3` | 0–18 秒，步长 0.5；从首帧绘制开始计时，动画至少播放这么久再进入应用；应用未就绪时继续等待；0 表示不额外等待 |
 
 ### 5.2 视频轮播
@@ -484,7 +484,7 @@ Logo / 问候语的垂直位置以 `--dba-titlebar` 之后的安全区为基准�
 - `<html>` 增加 `dba-previewing`，CSS 精确命中 `body > div:has([data-shortcut-modal="settings"])`；
 - 同时对该 portal 写入内联 `visibility:hidden / pointer-events:none / opacity:0`，覆盖不支持 `:has()` 的环境；
 - 不关闭 modal、不卸载面板，因此当前分区与草稿原样保留；
-- 预览期间点击任意位置或按任意键可立即关闭预览（仅预览路径；真实开机仍受「允许跳过」与倒计时约束）；
+- 预览期间点击任意位置或按任意非功能键可立即关闭预览（仅预览路径；真实开机仍受「允许跳过」与倒计时约束）；
 - 动画结束、跳过、视频结束、超时或 15s 安全计时任一到达，都会移除隐藏状态并恢复设置面板。
 
 ### 6.10 系统标题栏与右上角按钮融合
@@ -505,7 +505,7 @@ Windows 桌面端的最小化 / 最大化 / 关闭按钮是 **Electron 原生 ca
 
 - `prefers-reduced-motion: reduce`：不创建视频、不做入场动画、不呼吸；保留首帧纯色遮罩；app ready 后 0.1s 退场。
 - 倒计时 `role="status" aria-live="polite"`。
-- 任意键（不限于 Esc / 空格）或鼠标点击仅在动画运行、倒计时已解锁且 `document.activeElement` 不是 `input / textarea / select / contenteditable` 时生效。
+- 任意非功能键（不限于 Esc / 空格；F1–F12 除外）或鼠标点击仅在动画运行、倒计时已解锁且 `document.activeElement` 不是 `input / textarea / select / contenteditable` 时生效。
 
 ---
 
@@ -548,15 +548,16 @@ Windows 桌面端的最小化 / 最大化 / 关闭按钮是 **Electron 原生 ca
 npm test
 ```
 
-共 49 个测试：
+共 54 个测试：
 
-- `tests/config.test.mjs`：默认值、范围/步长、颜色/字体/URL 白名单、视频去重与上限、六时段、问候语三种模式、轮播游标、Windows 路径转 URL、原型污染、输入不可变性；新增 CSS 颜色解析、相对亮度与标题栏图标对比色。
-- `tests/first-frame.test.mjs`：注入行顺序、启用/禁用分支、HTML 转义、无 `</script` / `</style`；`node:vm` 执行首帧脚本，验证 `end()` 认领顺序、12s 未认领自保、已认领不自保、重复安装幂等；新增透明标题栏探针规则与深/浅背景对比色。
-- `tests/contract.test.mjs`：`package.json` 强制字段、patch 行 id / 包名 / 宿主导出名一致、volatile 锚点、`src/client.ts` 不存在、客户端 bundle 的加载器外壳与 `inject = ['slots']`、宿主 ESM/schemastery 外置。
-- `tests/store.test.mjs`：0.2.1 `configEditor.edit(entry, changeFn)` 真实契约、settings 命名空间优先级/写入/watch、JSON 原子写与恢复默认。
+- `tests/config.test.mjs`：默认值、范围/步长、颜色/字体/URL 白名单、视频去重与上限、六时段、问候语三种模式、轮播游标、Windows 路径转 URL、原型污染、输入不可变性；新增 CSS 颜色解析、相对亮度与标题栏图标对比色、UNC/远程 `file://` 拒绝，以及中英文区域判断。
+- `tests/first-frame.test.mjs`：注入行顺序、启用/禁用分支、HTML 转义、无 `</script` / `</style`；`node:vm` 执行首帧脚本，验证 `end()` 认领顺序、12s 未认领自保、已认领不自保、重复安装幂等、只删除带标记的首帧样式；新增 `pointer-events:none`、纯 CSS 12s 兜底与透明标题栏探针规则。
+- `tests/contract.test.mjs`：`package.json` 强制字段、patch 行 id / 包名 / 宿主导出名一致、volatile 锚点、`src/client.ts` 不存在、客户端 bundle 的加载器外壳与 `inject = ['slots']`、宿主 ESM/schemastery 外置、注入版本与 `package.json` 一致。
+- `tests/store.test.mjs`：0.2.1 `configEditor.edit(entry, changeFn)` 真实契约、settings 命名空间优先级/写入/watch、JSON 原子写与恢复默认；新增“恢复默认会删除遗留 `config.json`，旧值不会回弹”。
+- `tests/routes.test.mjs`：配置读写接口只接受 loopback `Host` 和本次激活的会话 token；缺少 token、DNS rebinding Host 均返回 403。
 - `tests/dom-smoke.test.mjs`：jsdom + React 真实挂载 `shell.overlay` 条目，验证 app ready 提前到达时仍受 bootDuration 下限约束（不会提前进入页面）、随后正常退场、遮罩被认领并移除、槽位条目释放、标题栏融合样式安装与退场清理、宿主为 body 直系子节点（视口定位）、无 activation 失败。
 - `tests/preview-presentation.test.mjs`：用 esbuild 内存构建后直接测试真实 `preview-presentation.ts`，验证设置 portal 隐藏/精确恢复、焦点释放、重复调用与引用计数、以及找不到 portal 时的安全降级。
-- `tests/preview-controller.test.mjs`：内存打包真实 controller，验证预览在 allowSkip=false、10s 倒计时锁定时仍可立即关闭，并只触发一次 onDispose / onFinished、移除遮罩与标题栏融合。
+- `tests/preview-controller.test.mjs`：内存打包真实 controller，验证预览在 allowSkip=false、10s 倒计时锁定时仍可立即关闭，并只触发一次 onDispose / onFinished、移除遮罩与标题栏融合；新增 CSS 模式 + 无视频时自定义音效仍会创建并播放。
 - `tests/css-effects.test.mjs`：校验 8 种风格均有标签与选择器规则、`none` 不生成动画规则、首帧注入只包含当前风格、输出不含 `</style`。
 
 ### 契约核对来源
@@ -582,7 +583,7 @@ npm test
 | 无 settings 插件 | 设置页仍会向 `settings.section` 等待声明；动画与首帧不受影响 |
 | schemastery < 3.18.4 | `.volatile()` 自动退化，插件正常加载，仅热更新不可用 |
 
-> 说明：工程在当前机器上完成了构建、49 项自动化测试与 jsdom 真挂载冒烟；未在正在运行的桌面 GUI 内做安装回归（避免修改用户 profile）。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
+> 说明：工程在当前机器上完成了构建、54 项自动化测试与 jsdom 真挂载冒烟；未在正在运行的桌面 GUI 内做安装回归（避免修改用户 profile）。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
 
 ---
 
@@ -593,10 +594,10 @@ npm test
 | 插件不加载 / PENDING | 客户端是否 `export const inject = ['slots']`；profile 是否含 `@deepseek-ai/dsh-client-ui-renderer`；控制台是否有 activation 警告 |
 | 设置页没有「开机动画」 | 设置壳是否加载；`settings.section` 是否被声明；客户端是否在 `apply` 阶段报错 |
 | 首帧白屏后进入应用 | 宿主是否加载 `webServer`；`webserver/index-inject` 是否被收集；`dist/index.html` 是否被别的东西覆盖 |
-| 遮罩一直不消失 | 客户端是否异常；正常路径 12s 自保、20s 硬超时；看 `[dsh-boot-custom]` 日志 |
-| 视频黑屏 | 编码/容器是否受 Chromium 支持；`file://` 是否被允许；换网络地址或 base64 测试；看 `every video source failed` 警告 |
-| 没有声音 | 自动播放策略；首屏无用户手势时大概率被拒；这是浏览器行为，插件会自动静音降级 |
-| 保存失败 | 面板状态会显示具体错误；检查 `/plugins/dsh-boot-custom/config` 是否 403/400；确认 `configEditor` entry 或 settings 命名空间可用 |
+| 遮罩一直不消失 | 客户端是否异常；正常路径 12s 自保、20s 硬超时；遮罩本身 `pointer-events:none` 且 12s 纯 CSS 淡出，不会再锁住输入；看 `[dsh-boot-custom]` 日志 |
+| 视频黑屏 | 编码/容器是否受 Chromium 支持；`file://` 是否被允许；换网络地址或 base64 测试；看 `every video source failed` 警告；UNC/远程 `file://` 已被拒绝 |
+| 没有声音 | 自动播放策略；首屏无用户手势时大概率被拒；CSS 模式、无视频或减少动态效果下自定义音效仍会启动，被拒后自动静音降级 |
+| 保存失败 | 面板状态会显示具体错误；检查 `/plugins/dsh-boot-custom/config` 是否 403/400；确认 `configEditor` entry 或 settings 命名空间可用；若宿主重启过，刷新页面以取得新的会话 token |
 | 设置面板空白 / 看不到 × | 插件会把设置壳外层 dialog 固定为 `overflow:clip`，并在操作区提供「关闭设置」；如果仍出现，检查 profile 是否残留旧 `dsh-boot-animation` 行，完全退出桌面端后重启 |
 | 配置重启后丢失 | 是否用了「仅本次预览」；base64 是否超过上限；`dsh.profile.bundles` 是否仍包含本包 |
 

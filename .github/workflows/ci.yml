@@ -30,3 +30,6 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Verify committed lib is reproducible
+        run: git diff --exit-code -- lib

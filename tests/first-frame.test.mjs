@@ -30,7 +30,7 @@ function fakeDocument() {
     },
   }
   const styleSheet = {
-    textContent: `#${MASK_ID} { background: #000; } html, body { background: #000 !important; }`,
+    textContent: `/* dsh-boot-custom-first-frame-style */\n#${MASK_ID} { background: #000; } html, body { background: #000 !important; }`,
     parentNode: {
       removeChild(node) {
         stylesRemoved.push(node)
@@ -133,6 +133,9 @@ test('the stylesheet and markup are injection-safe and escape user text', () => 
   const style = buildFirstFrameStyle(config)
   const markup = buildFirstFrameMarkup(config)
   assert.ok(style.includes('#123456'))
+  assert.ok(style.startsWith('/* dsh-boot-custom-first-frame-style */'), 'style has an exact cleanup marker')
+  assert.ok(style.includes('pointer-events: none'), 'mask never blocks input')
+  assert.ok(style.includes('dba-ff-timeout'), 'CSS-only timeout backs up the injected script')
   assert.equal(style.toLowerCase().includes('</style'), false)
   // Native caption strip: transparent, with light glyphs on this dark surface.
   assert.ok(style.includes('--dsw-specific-sidebar-fill'))
@@ -171,7 +174,7 @@ test('caption fusion follows a light launch background', () => {
 
 test('injection rows follow the documented render order', () => {
   const config = normalizeConfig({ enabled: true })
-  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: 1, writeMode: 'file' })
+  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.1', writeMode: 'file' })
   assert.deepEqual(
     rows.map((row) => `${row.kind}${row.placement === undefined ? '' : `:${row.placement}`}`),
     ['global', 'global', 'style', 'html:body', 'script:body'],
@@ -184,7 +187,7 @@ test('injection rows follow the documented render order', () => {
 
 test('a disabled plugin injects the config global but no mask', () => {
   const config = normalizeConfig({ enabled: false })
-  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: 1, writeMode: 'settings' })
+  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.1', writeMode: 'settings' })
   assert.deepEqual(
     rows.map((row) => row.kind),
     ['global', 'global'],
@@ -195,7 +198,7 @@ test('a disabled plugin injects the config global but no mask', () => {
 test('rows are JSON-serializable (the table feeds two renderers)', () => {
   const rows = buildInjectionRows(normalizeConfig({ enabled: true }), {
     name: 'dsh-boot-custom',
-    version: 1,
+    version: '1.0.1',
     writeMode: 'file',
   })
   const json = JSON.parse(JSON.stringify(rows))

@@ -32,5 +32,11 @@ export interface RouteConfigStore {
     save(next: unknown): Promise<BootAnimationConfig>;
     reset(): Promise<BootAnimationConfig>;
 }
+/**
+ * True when the request's Host header is a loopback authority. DNS rebinding
+ * keeps the browser's Origin but changes Host; rejecting non-loopback Hosts
+ * prevents a remote page from reaching the local write server.
+ */
+export declare function isLoopbackHost(value: unknown): boolean;
 /** Register the config routes; no-op when the host has no web server. */
-export declare function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigStore): void;
+export declare function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigStore, writeToken: string): void;

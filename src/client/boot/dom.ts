@@ -29,11 +29,6 @@ export function clearVar(element: HTMLElement, name: string): void {
   }
 }
 
-/** Escape a string for use inside a CSS `url("…")`-style value. */
-export function cssString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\a ')
-}
-
 /** Reduce motion for an element (used when the user asked for less motion). */
 export function disableAnimations(element: HTMLElement): void {
   try {

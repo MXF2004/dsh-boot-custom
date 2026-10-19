@@ -1,6 +1,6 @@
 {
   "name": "dsh-boot-custom",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Configurable boot animation for the DeepSeek Harness desktop app: video rotation, 8 CSS styles, first-frame anti-flash mask, boot timing and any-key skip.",
   "type": "module",
   "main": "lib/index.js",
@@ -64,7 +64,7 @@
     "react": "^18.2.0"
   },
   "engines": {
-    "node": "^22.19.0 || >=24.0.0"
+    "node": "^22.13.0 || >=24.0.0"
   },
   "license": "MIT",
   "keywords": [

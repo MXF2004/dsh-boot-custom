@@ -70,24 +70,6 @@ export class Ledger {
     this.add(() => target.removeEventListener(type, handler as EventListener, options))
   }
 
-  /** Track a media element: pause, release its source and detach on dispose. */
-  media(element: HTMLMediaElement): void {
-    this.add(() => {
-      try {
-        element.pause()
-        element.removeAttribute('src')
-        element.load()
-      } catch {
-        // Detached or already torn down.
-      }
-      try {
-        element.remove()
-      } catch {
-        // Not in a document.
-      }
-    })
-  }
-
   /** Release every recorded effect, newest first. Idempotent. */
   dispose(): void {
     if (this.disposed) return

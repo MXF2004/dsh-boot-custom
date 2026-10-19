@@ -16,7 +16,7 @@
  * @module dsh-boot-custom/host/store
  */
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
@@ -68,6 +68,7 @@ export interface ConfigEditorLike {
 interface FileRead {
   exists: boolean
   value: unknown
+  oversized?: boolean
 }
 
 /** True when two JSON-shaped values are structurally equal. */
@@ -262,6 +263,12 @@ export class HostConfigStore {
   private unsubscribe: (() => void) | undefined
   private value: BootAnimationConfig
   private disposed = false
+  /** Cache the parsed JSON file until its size/mtime changes. */
+  private fileCache: { mtimeMs: number; size: number; read: FileRead } | null = null
+  /** An oversized file is preserved, never silently overwritten. */
+  private fileOversized = false
+  /** Set after reset/migration so a file that could not be deleted is ignored. */
+  private fileIgnored = false
 
   /**
    * @param ctx - host context (settings / configEditor are optional).
@@ -297,9 +304,12 @@ export class HostConfigStore {
       if (file.exists && Object.keys(user).length === 0 && hasOverrides(toPlain(file.value))) {
         try {
           if (typeof this.scope.update === 'function') {
-            void this.scope.update(toPlain(file.value)).catch((error: unknown) => {
-              console.warn('[dsh-boot-custom] settings migration failed:', error)
-            })
+            void this.scope
+              .update(toPlain(file.value))
+              .then(() => this.removeFile())
+              .catch((error: unknown) => {
+                console.warn('[dsh-boot-custom] settings migration failed:', error)
+              })
           }
         } catch (error) {
           console.warn('[dsh-boot-custom] settings migration failed:', error)
@@ -338,17 +348,19 @@ export class HostConfigStore {
         return
       }
       if (this.mode === 'settings' && this.scope !== undefined) {
-        const user = readUserSection(this.ctx)
-        if (user !== undefined) {
-          const file = this.readFile()
-          const entryOverrides = hasOverrides(this.entryValues) ? this.entryValues : {}
-          this.value = normalizeConfig(
-            deepMerge(deepMerge(DEFAULT_CONFIG, deepMerge(file.value, user)), entryOverrides),
-          )
-          return
+        const described = readUserSection(this.ctx)
+        let user: Record<string, unknown>
+        if (described !== undefined) {
+          user = described
+        } else {
+          const resolved = this.scope.get()
+          user = isRecord(resolved) ? resolved : {}
         }
-        const resolved = this.scope.get()
-        this.value = normalizeConfig(deepMerge(DEFAULT_CONFIG, resolved))
+        const file = this.readFile()
+        const entryOverrides = hasOverrides(this.entryValues) ? this.entryValues : {}
+        this.value = normalizeConfig(
+          deepMerge(deepMerge(DEFAULT_CONFIG, deepMerge(file.value, user)), entryOverrides),
+        )
         return
       }
       const file = this.readFile()
@@ -394,12 +406,16 @@ export class HostConfigStore {
       try {
         // Replacing with an empty section re-inherits every schema default.
         await this.scope.replace({})
+        // The legacy JSON file must not resurrect the values on the next
+        // refresh: a reset clears both layers.
+        this.removeFile()
         this.value = normalizeConfig(DEFAULT_CONFIG)
         return this.value
       } catch (error) {
         console.warn('[dsh-boot-custom] settings reset failed:', error)
       }
     }
+    this.removeFile()
     return this.save(DEFAULT_CONFIG)
   }
 
@@ -417,26 +433,59 @@ export class HostConfigStore {
   /** Read (never throw on) the JSON fallback document. */
   private readFile(): FileRead {
     try {
-      if (!existsSync(this.filePath)) return { exists: false, value: {} }
-      const text = readFileSync(this.filePath, 'utf8')
-      if (text.length > LIMITS.maxBodyBytes) {
-        console.warn('[dsh-boot-custom] config.json is oversized; ignoring it')
+      if (this.fileIgnored) return { exists: false, value: {} }
+      if (!existsSync(this.filePath)) {
+        this.fileCache = null
+        this.fileOversized = false
         return { exists: false, value: {} }
       }
+      const stat = statSync(this.filePath)
+      if (this.fileCache !== null && this.fileCache.mtimeMs === stat.mtimeMs && this.fileCache.size === stat.size) {
+        return this.fileCache.read
+      }
+      if (stat.size > LIMITS.maxBodyBytes) {
+        console.warn('[dsh-boot-custom] config.json is oversized; preserving it and ignoring its contents')
+        this.fileOversized = true
+        const read: FileRead = { exists: false, value: {}, oversized: true }
+        this.fileCache = { mtimeMs: stat.mtimeMs, size: stat.size, read }
+        return read
+      }
+      const text = readFileSync(this.filePath, 'utf8')
       const parsed: unknown = JSON.parse(text)
-      return { exists: true, value: isRecord(parsed) ? parsed : {} }
+      const read: FileRead = { exists: true, value: isRecord(parsed) ? parsed : {} }
+      this.fileOversized = false
+      this.fileCache = { mtimeMs: stat.mtimeMs, size: stat.size, read }
+      return read
     } catch (error) {
       console.warn('[dsh-boot-custom] config.json could not be read:', error)
       return { exists: false, value: {} }
     }
   }
 
+  /** Delete the legacy JSON document after migration/reset. */
+  private removeFile(): void {
+    try {
+      if (existsSync(this.filePath)) unlinkSync(this.filePath)
+    } catch (error) {
+      // Even if the OS refuses the delete, keep ignoring it for this process.
+      console.warn('[dsh-boot-custom] config.json could not be removed:', error)
+    }
+    this.fileIgnored = true
+    this.fileCache = null
+    this.fileOversized = false
+  }
+
   /** Atomically write the JSON fallback document. */
   private writeFile(config: BootAnimationConfig): void {
+    if (this.fileOversized) {
+      throw new Error('config.json is oversized; refusing to overwrite it')
+    }
     const dir = dirname(this.filePath)
     mkdirSync(dir, { recursive: true })
     const temporary = `${this.filePath}.${process.pid}.tmp`
     writeFileSync(temporary, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
     renameSync(temporary, this.filePath)
+    this.fileIgnored = false
+    this.fileCache = null
   }
 }
