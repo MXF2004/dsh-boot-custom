@@ -2,6 +2,42 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.3] - 2026-11-03
+
+Compatibility release for **DeepSeek Harness 0.2.1-rc.5** (the current desktop and
+web runtime), verified against a real temporary profile.
+
+### Added
+
+- `dsh.manifestVersion: 1`, `icon: "icon.svg"` and an explicit top-level
+  `engines.dsh` range (`>=0.1.7-rc.1 <0.3.0`) that the 0.2.1 app-boot
+  compatibility reader actually evaluates. The older `dsh.engines` nesting is
+  gone.
+- 0.2.x settings presentation policy: `settings.configure({ auto: false }, owner)` —
+  keyed by the config-editor entry's fiber with `ctx.fiber` as the fallback —
+  suppresses the schema-generated form because this plugin ships its own
+  `settings.section` page. Hosts without that API are unaffected.
+- Tests for the presentation policy (registration, disposer, legacy no-op) and
+  manifest fields.
+
+### Changed
+
+- `@deepseek-ai/schemastery` now tracks `^3.18.5`, matching DSH 0.2.1.
+- Development types now track Node 24 (`@types/node ^24.10.0`).
+- Documentation now distinguishes the Web first-paint mask from the desktop
+  0.2.1 IPC path, where injected rows are applied before React mounts rather
+  than in the static document's first painted frame.
+- Test suite: 71 `node:test` cases plus 3 Playwright cases.
+
+### Verified
+
+- Real DSH 0.2.1-rc.5 Web-host profile: host activation (`store=config-editor`),
+  first-frame injection rows, boot overlay, `settings.section` page,
+  config-editor save and reset, and the in-settings preview/restore cycle.
+- Desktop 0.2.1 `dsh-app://` boot path: static SPA document plus IPC
+  `injections` applied by the frontend before React mounts. A desktop-window
+  UAT pass is still recommended.
+
 ## [1.0.2] - 2026-10-19
 
 Test-and-a11y hardening release driven by the v1.0.1 audit.

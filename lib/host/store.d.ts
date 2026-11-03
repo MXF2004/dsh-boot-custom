@@ -4,8 +4,9 @@
  * Resolves one normalized configuration from the three supported layers and
  * persists writes back through the best available seam:
  *
- *   1. `ctx.configEditor.edit(entryId, config)` — DSH >= 0.1.7, where the
- *      bundle entry's volatile fields are the settings document.
+ *   1. `ctx.configEditor.edit(entry, change)` — DSH >= 0.1.7, where the
+ *      bundle entry's volatile fields are the settings document and `change`
+ *      derives the next raw config.
  *   2. the `boot-custom` settings namespace — the 0.1.x fallback.
  *   3. `<profile>/boot-custom/config.json` — the final fallback, also used
  *      when both services are unavailable.
@@ -34,6 +35,8 @@ export interface StoreHostContext {
             entries(): Iterable<unknown>;
         };
     };
+    /** Cordis effect registration (used to release optional settings policies). */
+    effect?(callback: () => (() => void) | void, label?: string): unknown;
 }
 /** One registered settings namespace owner scope (0.1.x). */
 export interface SettingsScopeLike {
@@ -53,6 +56,14 @@ export interface SettingsServiceLike {
         ns: string;
         user?: unknown;
     }>;
+    /**
+     * 0.2.x page policy: disable the schema-generated form for a plugin that
+     * ships its own `settings.section` page. The second argument is the owning
+     * Loader fiber; the service keys the policy by it.
+     */
+    configure?(presentation: {
+        auto?: boolean;
+    }, owner?: unknown): unknown;
 }
 /**
  * The 0.2.x config editor face.
@@ -74,6 +85,18 @@ export declare function readField(value: unknown): unknown;
 export declare function resolveProfileDir(): string;
 /** Absolute path of the JSON fallback document. */
 export declare function resolveConfigFile(): string;
+/**
+ * Tell the 0.2.x settings service that this plugin renders its own page.
+ *
+ * Settings forms are generated from a plugin's volatile Config by default
+ * (`autoGenerate: true`). This plugin ships a richer `settings.section` page,
+ * so a generated duplicate must be suppressed. The call is optional: hosts
+ * that predate `SettingsService.configure` (or omit the settings service)
+ * simply keep the legacy behavior, and failures are logged, never thrown.
+ *
+ * @param ctx - host context carrying `settings`, `fiber` and optionally `effect`.
+ */
+export declare function configureSettingsPresentation(ctx: StoreHostContext): void;
 /**
  * Resolve the config editor service.
  *

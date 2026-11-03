@@ -48,7 +48,7 @@ test('apply() emits a complete first-frame table and a session token', () => {
     assert.equal(config.value.logo.text, 'Applied host')
     assert.equal(typeof meta.value.writeToken, 'string')
     assert.ok(meta.value.writeToken.length >= 32)
-    assert.equal(meta.value.version, '1.0.2')
+    assert.equal(meta.value.version, '1.0.3')
     assert.ok(table.some((row) => row.kind === 'script'))
   } finally {
     for (const dispose of disposers) dispose()

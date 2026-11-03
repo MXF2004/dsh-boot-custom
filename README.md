@@ -1,241 +1,235 @@
-<div align="center">
-  <img src="docs/hero.png" alt="DSH Boot Custom 启动动画预览" width="100%" />
-  <h1>DSH Boot Custom</h1>
-  <p>给 DeepSeek Harness 桌面端一个完整的开机动画：视频轮播、8 种 CSS 风格、首帧防白屏、任意键跳过，以及可配置的进入时机。</p>
-  <p>
-    <img alt="version" src="https://img.shields.io/badge/version-1.0.2-4f9dff?style=flat-square" />
-    <img alt="tests" src="https://img.shields.io/badge/tests-69%20passing-2ea043?style=flat-square" />
-    <img alt="license" src="https://img.shields.io/badge/license-MIT-2ea043?style=flat-square" />
-    <img alt="DSH" src="https://img.shields.io/badge/DSH-0.1.7%2B%20%7C%200.2.x-8b5cf6?style=flat-square" />
-  </p>
-  <p>
-    <a href="#快速开始">快速开始</a> ·
-    <a href="#配置">配置</a> ·
-    <a href="#css-动画风格">CSS 风格</a> ·
-    <a href="#性能">性能</a> ·
-    <a href="README.zh.md">完整手册</a> ·
-    <a href="CHANGELOG.md">更新日志</a> ·
-    <a href="#english">English</a>
-  </p>
-</div>
+# DSH Boot Custom
 
-> 上图为插件实际 CSS 背景动画的渲染预览，展示「极光流影」风格。
+为 **DeepSeek Harness（DSH）桌面端**提供可配置的启动动画，支持视频背景、CSS 动效、Logo、问候语、加载进度和音效。
 
-## 功能
+[安装](#安装) · [使用与配置](#使用与配置) · [兼容性与限制](#兼容性与限制) · [开发](#开发) · [故障排查](#故障排查) · [English](#english)
 
-- **视频轮播**：最多 30 个视频源，支持本地文件、`file:///`、HTTP(S)、`data:`；随机单次或顺序循环；单条失败自动切换下一条。
-- **8 种 CSS 背景动画**：呼吸光晕、极光流影、星河流转、光带扫过、脉冲涟漪、霓虹网格、旋转光锥、纯净背景；纯 CSS 伪元素实现，无额外 DOM 与 JS 计时器。
-- **首帧防白屏**：宿主通过 `webserver/index-inject` 注入首帧遮罩，浏览器绘制第一帧就是动画背景；遮罩指针穿透，12 秒未认领时纯 CSS 淡出。
-- **进入时机**：动画至少播放 `bootDuration` 秒，并且应用已就绪，才显示软件页面；不会出现应用页面提前顶掉动画。
-- **任意键 / 点击跳过**：支持鼠标、触摸和键盘按键（F1–F12 功能键除外；Tab 保留模态焦点陷阱）；仍遵守「允许跳过」与「跳过倒计时」。
-- **完整可配置**：Logo、问候语、真实进度条、跳过倒计时、5 种退场转场、自定义音效、播放速度。
-- **桌面融合**：全窗口固定定位，覆盖侧边栏与标题栏；Windows 原生 caption 按钮区域透明，图标颜色随背景自适应。
-- **设置内预览**：预览时自动隐藏设置面板并全屏播放，结束后恢复；当前草稿不会写入配置。
-- **性能友好**：客户端 bundle 已压缩，CSS 装饰层在视频正常播放时暂停，首帧只注入当前风格的 keyframes。
+![极光流影风格预览](docs/hero.png)
 
-## 界面预览
+## 主要功能
+
+| 功能 | 说明 |
+| --- | --- |
+| CSS 背景 | 8 种风格，支持背景色和主题光效颜色 |
+| 视频背景 | 最多管理 30 个视频源；每次启动随机选择或按顺序轮换，加载失败时尝试下一条 |
+| 启动遮罩 | 通过宿主注入机制在应用挂载前显示遮罩，减少启动阶段的白屏 |
+| 展示与跳过 | 可配置启动展示时长、跳过开关、跳过倒计时和 5 种退场转场 |
+| 内容与声音 | 可自定义多行 Logo、固定/分时段/随机问候语、进度条、视频原音或独立音效 |
+| 全屏预览 | 预览时隐藏设置面板，播放结束后恢复；可随时点击或按 Esc 退出预览 |
+| 桌面适配 | 全窗口覆盖、标题栏安全区适配，以及 Windows 原生窗口按钮区域的颜色融合 |
+| 无障碍 | 支持减少动态效果偏好、键盘焦点约束、控件标签与状态提示 |
 
 <details>
-<summary>展开 8 种 CSS 风格预览</summary>
-<br />
-<img src="docs/css-styles.png" alt="8 种 CSS 背景动画风格" width="100%" />
+<summary>查看 8 种 CSS 风格</summary>
+
+![CSS 背景风格预览](docs/css-styles.png)
+
 </details>
 
-## 快速开始
+## 安装
 
 ### 环境要求
 
 | 项目 | 要求 |
 | --- | --- |
-| DSH Desktop | `0.1.7+`（推荐 `0.2.x`） |
-| Node.js（仅从源码构建时需要） | `^22.13.0` 或 `>=24.0.0` |
-| 平台 | Windows / macOS / Linux（Windows 原生标题栏融合最完整） |
+| DSH | 包声明的兼容范围为 `>=0.1.7-rc.1 <0.3.0`；当前适配基线为 `0.2.1-rc.5` |
+| 安装环境 | 可使用 `dsh` CLI，且已有 `desktop` profile |
+| Node.js | 包声明为 `^22.13.0` 或 `>=24.0.0`；源码构建和测试建议使用 Node.js 24 |
+| 客户端 | 需要 DSH 的 Web 渲染器与槽位服务；客户端构建目标为 Chromium 120 |
 
-### 安装
+不同平台的验证程度见[兼容性与限制](#兼容性与限制)。
 
-1. 从 Releases 下载 `dsh-boot-custom-1.0.2.tgz`，或在本仓库执行 `npm pack` 生成。
-2. 安装到 desktop profile：
+### 安装已有插件包
+
+将命令中的路径替换为实际的 `.tgz` 文件路径：
 
 ```powershell
-dsh plugin --profile desktop add "path\to\dsh-boot-custom-1.0.2.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom-1.0.3.tgz"
 ```
 
-3. **完全退出并重启**桌面端（包括托盘进程），不要只刷新页面。
-4. 打开「设置 → 开机动画」。
+安装后，**完全退出并重新启动 DSH 桌面端，包括托盘进程**，再打开「设置 → 开机动画」。宿主配置和启动遮罩在启动阶段加载，仅刷新页面不足以完成安装后的切换。
 
-### 从源码构建
+### 从源码打包
+
+在项目根目录执行：
 
 ```bash
-npm install
-npm run typecheck
-npm run build
-npm test          # 69 项测试
-npm run test:coverage
-npm run test:e2e  # Playwright 首帧注入 E2E
-npm pack          # 生成 dsh-boot-custom-1.0.2.tgz
+npm ci
+npm pack
 ```
 
-### 升级
+`npm pack` 会通过 `prepack` 自动构建，输出 `dsh-boot-custom-<版本号>.tgz`。使用上面的安装命令加载生成的包，文件名以命令实际输出为准。
 
-升级前请先卸载旧包并清理 profile：
+### 升级与卸载
+
+更新同名插件时，构建或取得新版 `.tgz`，重新执行安装命令并完全重启桌面端。
+
+如果从旧名称 **`dsh-boot-animation`** 迁移，先移除旧插件，避免两套动画同时加载：
 
 ```powershell
 dsh plugin --profile desktop remove dsh-boot-animation
 ```
 
-同时从 profile 的 `cordis.patch.yml` 删除旧的 `dsh-boot-animation` 行，并从 `dsh.profile.bundles` 移除旧包。旧配置不会自动迁移；可在新设置页重新配置，或把旧行的 `config` 复制到新行。
+检查目标 profile 的 `dsh.profile.bundles` 和 `cordis.patch.yml` 是否仍有旧插件条目。旧名称的配置不会自动迁移；手动迁移前请备份 profile 配置，具体方式见[完整手册](README.zh.md#4-安装)。
 
-### 卸载
+卸载当前插件：
 
 ```powershell
 dsh plugin --profile desktop remove dsh-boot-custom
 ```
 
-## 配置
+确认目标 profile 已移除本插件的加载条目，再完全重启桌面端。
 
-所有配置都在「设置 → 开机动画」中，修改后自动保存。完整字段、范围和运行时说明见 [README.zh.md §5](README.zh.md#5-配置项)。
+## 使用与配置
 
-| 字段 | 默认 | 说明 |
+打开「设置 → 开机动画」调整配置。**常规修改会在短暂延迟后自动保存**，请留意面板中的保存状态和错误提示。
+
+- **预览当前配置**：全屏播放当前设置；预览动作本身不额外保存，但此前的设置修改仍按自动保存规则处理。
+- **本地文件的“仅本次预览”**：使用临时文件 URL 播放，媒体地址不会写入配置，重启后不可复用。
+- **恢复默认**：重置已保存的配置，回到内置默认值。
+
+### 常用配置
+
+| 字段 | 默认值 | 说明 |
 | --- | --- | --- |
-| `enabled` | `true` | 总开关；关闭后不注入首帧遮罩 |
-| `mode` | `css` | `css` 纯 CSS 动画；`video` 视频轮播 |
-| `cssAnimation` | `breathe` | 8 种 CSS 风格之一 |
-| `bootDuration` | `3` | 最少展示秒数（0–18，步长 0.5）；应用未就绪时继续等待 |
-| `allowSkip` | `true` | 关闭后点击 / 任意键均无效 |
-| `countdown.seconds` | `3` | 跳过倒计时；0 表示立即可跳过 |
+| `enabled` | `true` | 启用动画；关闭后不显示启动遮罩和动画 |
+| `mode` | `css` | `css` 使用 CSS 背景；`video` 使用视频背景 |
+| `cssAnimation` | `breathe` | CSS 风格，也用于视频加载失败后的背景 |
+| `bootDuration` | `3` | 配置展示时长，0–18 秒，步长 0.5 秒；具体退场规则见下文 |
+| `allowSkip` | `true` | 启动动画是否允许手动跳过 |
+| `countdown.enabled` / `countdown.seconds` | `true` / `3` | 启用跳过倒计时，范围 0–10 秒；关闭倒计时或设为 0 可立即解锁跳过 |
 | `videos` | `[]` | 视频源列表，最多 30 条 |
-| `videoMode` | `random` | `random` 随机单次；`sequence` 顺序循环 |
-| `playing.rate` | `1` | 0.25x–2x，步长 0.25 |
-| `logo.text` | `DeepSeek` | 多行 Logo 文本 |
-| `greeting.mode` | `time` | 固定 / 分时段 / 随机语录 |
-| `progress` | 胶囊 / 底部 / 真实进度 | 进度条样式与位置 |
-| `transition.style` | `fade` | fade / slide-up / zoom / black / blur |
-| `audio.enabled` | `false` | 视频原音或自定义音效 |
+| `videoMode` | `random` | `random` 随机选择；`sequence` 在每次启动时选择列表中的下一条 |
+| `playing.rate` | `1` | 视频播放速度，0.25–2 倍，步长 0.25 |
+| `playing.background` | `#0b1220` | 启动背景色 |
+| `logo.text` | `DeepSeek` | Logo 文字，支持多行 |
+| `greeting.mode` | `time` | `fixed` 固定文本、`time` 分时段、`random` 随机语录 |
+| `progress.realProgress` | `true` | 使用加载里程碑驱动进度提示；关闭后使用时间模拟 |
+| `transition.style` | `fade` | `fade`、`slide-up`、`zoom`、`black`、`blur` |
+| `transition.duration` | `0.3` | 退场转场时长，0.1–2 秒 |
+| `audio.enabled` | `false` | 启用声音，可选择视频原音或自定义音效 |
 
-### 启动时长与跳过
+完整字段和范围见[完整手册的配置项](README.zh.md#5-配置项)。配置类型、默认值和校验分别以 [`types.ts`](src/shared/types.ts)、[`defaults.ts`](src/shared/defaults.ts) 和 [`config.ts`](src/shared/config.ts) 为准。
 
-- `bootDuration = 3`：从首帧绘制开始计时，动画至少 3 秒，同时应用已就绪才进入；应用加载慢时动画保持。
-- `bootDuration = 0`：不额外等待，应用就绪即退场（最快启动）。
-- 倒计时结束前点击/按键不生效；结束后任意非功能键或点击立即跳过。
-- 完全关闭跳过：`allowSkip = false`。
+### 启动时长与跳过规则
 
-## CSS 动画风格
+- **自动退场**通常同时等待配置展示时长和应用就绪判定。启动遮罩阶段已经耗用的时间会计入配置时长；应用就绪通过 `app/ready` 事件或界面挂载探测判断，探测约 4 秒后有兜底放行。
+- **`bootDuration = 0`** 取消自定义时长等待，仍保留客户端动画约 0.9 秒的最短显示保护，以及必要的就绪判定和退场转场；减少动态效果模式另行简化。
+- **跳过倒计时**只控制何时允许手动跳过，结束时不会自动关闭动画，也不要求动画一定显示到倒计时结束。
+- 启用 `allowSkip` 且倒计时已解锁时，可点击、触摸或按普通按键跳过。Tab 用于焦点切换；F1–F12、单独的修饰键、输入法组合输入等不触发跳过。
+- 预览可随时退出，不受启动时的跳过开关和倒计时限制。从宿主记录的启动时间起约 20 秒后会触发超时退场，避免动画长期遮挡界面；退场转场另需少量时间。
 
-| 值 | 名称 | 特点 |
-| --- | --- | --- |
-| `breathe` | 呼吸光晕 | 中央柔光缓慢呼吸，默认、最克制 |
-| `aurora` | 极光流影 | 蓝 / 紫 / 青三色光斑漂移 |
-| `starfield` | 星河流转 | 星点缓慢漂移并闪烁 |
-| `sweep` | 光带扫过 | 斜向高光周期掠过 |
-| `pulse` | 脉冲涟漪 | 双圈光环从中心扩散 |
-| `grid` | 霓虹网格 | 底部透视网格向前流动 |
-| `spotlight` | 旋转光锥 | 大面积光锥缓慢旋转 |
-| `none` | 纯净背景 | 只保留底色与基础渐变 |
+### CSS 风格
 
-颜色自动跟随 `logo.glowColor`；所有风格只作用于背景层，不影响 Logo、问候语、进度条和倒计时的布局。
-
-## 性能
-
-1.0.0 针对启动路径做了以下优化：
-
-- **客户端 bundle 压缩**：`lib/client.js` 从约 178 KB 降至约 99 KB（约 -45%），减少启动时的下载、解析与执行时间。
-- **默认动画时长 5s → 3s**：启动等待更短；仍可在设置中调到 0–18 秒。
-- **启动时长从首帧计时**：首帧遮罩的展示时间计入 `bootDuration`，不会在客户端挂载后再额外叠加一整段等待。
-- **首帧注入按需输出**：只注入当前选中 CSS 风格的 keyframes，而不是全部 8 种。
-- **视频模式暂停装饰层**：视频正常播放时，fallback 的 CSS 动画通过 `animation-play-state: paused` 暂停，避免后台空转。
-- **配置读取不阻塞**：0.2.x config-editor 路径不读取额外文件；首帧与客户端共享同一份规范化配置。
-- **无额外 DOM**：CSS 动画全部由伪元素实现，不创建粒子节点或动画容器。
-
-如果仍希望更快进入：把「启动动画时长」设为 `0`，或选择 `none` 风格以降低 GPU 负担。
-
-## 兼容性
-
-| 运行时 | 行为 |
+| 值 | 风格 |
 | --- | --- |
-| DSH 0.2.x（推荐） | `configEditor.edit(entry, change)`、`settings.section`、`webserver/index-inject`、`shell.overlay` |
-| DSH 0.1.7+ | Volatile Config、config editor、`loader/volatile-update` |
-| 0.1.x 无 configEditor | `ctx.settings` 命名空间，最后回退 JSON 文件 |
-| 无设置插件 | 动画仍可启动；设置页等待 `settings.section` |
-| `prefers-reduced-motion` | 跳过视频/入场动画，隐藏装饰层，保留纯色遮罩 |
+| `breathe` | 呼吸光晕（默认） |
+| `aurora` | 极光流影 |
+| `starfield` | 星河流转 |
+| `sweep` | 光带扫过 |
+| `pulse` | 脉冲涟漪 |
+| `grid` | 霓虹网格 |
+| `spotlight` | 旋转光锥 |
+| `none` | 纯净背景，保留底色与基础渐变 |
 
-逐项 OS/DPI/时区/locale 状态见 [`docs/compat-matrix.md`](docs/compat-matrix.md)。
+光效颜色跟随 `logo.glowColor`。风格切换只影响背景层，Logo、问候语和进度条等可分别配置。
 
-## 项目结构
+### 视频、音效与配置保存
 
-```text
-src/
-├─ index.ts                 # 宿主入口：Config、首帧注入、路由、存储
-├─ host/                    # schema / store / routes / first-frame
-├─ client/
-│  ├─ index.ts              # 客户端入口：inject = ['slots'] + apply
-│  ├─ overlay.ts            # shell.overlay 槽位与预览
-│  ├─ boot/                 # controller / video / audio / progress / countdown / styles
-│  ├─ runtime/              # ledger / env / titlebar / preview-presentation
-│  └─ settings/             # 设置面板、控件、文件处理、客户端存储
-└─ shared/                  # 类型、默认值、校验、CSS 动画风格、问候/轮播
-scripts/build.mjs           # tsc(host) + esbuild(minified client) + loader 包装
-tests/                      # node:test + jsdom
-docs/                       # README 图片
-```
+- 支持本地路径、`file:///`、HTTP(S) 和相应的媒体 `data:` 地址。文件选择器主要支持 MP4/WebM/MOV 视频和 MP3/WAV/OGG 音频；实际能否播放取决于宿主的编码支持和文件访问策略。
+- `sequence` 的轮换游标保存在客户端 `localStorage`，用于下次启动选择；单次启动正常播放结束后不会连续播放整个列表。预览使用列表第一条且不推进游标。
+- 单条视频加载失败时依次尝试其他源；全部失败或列表为空时回退 CSS 背景。自动退场由启动规则决定，可能在视频播完前发生。
+- 能取得本地绝对路径时优先保存路径；无法取得路径时，可选择仅预览或将较小素材转为 base64。大体积 base64 会增加配置和启动注入负担，超限时会触发注入降级，启动时可能回退 CSS 背景。
+- 自定义音效也可在 CSS 模式使用。声音受 Chromium 自动播放策略限制，被拒绝时会静音降级。
+
+配置按宿主能力选择保存方式：`configEditor` → `boot-custom` 设置命名空间 → JSON 文件。只有最后一种降级模式使用 `<profile>/boot-custom/config.json`，并非所有安装都会生成该文件。
+
+## 兼容性与限制
+
+- **DSH 0.2.1-rc.5**：仓库的[兼容性矩阵](docs/compat-matrix.md)记录了真实临时 Web profile 的加载、保存/重置和预览验证；桌面窗口的完整启动验收仍待补充。
+- **启动遮罩的时机**：Web 宿主把遮罩放入索引 HTML；0.2.1 桌面端通过 IPC 在 React 挂载前应用注入行。桌面静态文档的第一帧仍由宿主控制。
+- **旧宿主**：保留 0.1.7 系列的设置和文件存储降级路径；兼容范围声明与每个版本的实际验证结果需分别看待。
+- **平台与显示**：Windows 原生窗口按钮的融合效果需要在桌面环境确认；macOS、Linux、DPI 和缩放的具体覆盖程度见兼容性矩阵。
+- **进度条**：根据文档、界面槽位、字体等加载里程碑平滑映射，作为加载提示使用，不能代表全部宿主任务的精确完成比例。
+- **减少动态效果**：系统启用 `prefers-reduced-motion: reduce` 时跳过视频和入场动效，隐藏背景装饰，并缩短退场。
+- **媒体路径**：拒绝 UNC 路径和带远程主机名的 `file://` 地址；本地文件还受宿主访问策略限制。
 
 ## 开发
 
+项目使用 TypeScript，宿主和客户端分别构建；React 由 DSH 壳层提供。
+
 ```bash
-npm install
+npm ci
 npm run typecheck
-npm run build
 npm test
 ```
 
-- 宿主：TypeScript → ESM（`lib/index.js`）。
-- 客户端：esbuild → CommonJS → `window.__ModuleLoader__.load(...)` 包装（`lib/client.js`）。
-- React 由 shell 提供，不打进 bundle。
-- 修改 `src/` 后必须重新 `npm run build`；`lib/` 是生成产物。
+| 命令 | 用途 |
+| --- | --- |
+| `npm run build` | 构建全部宿主和客户端产物到 `lib/` |
+| `npm run build:host` | 仅构建宿主 |
+| `npm run build:client` | 仅构建客户端，保留宿主产物 |
+| `npm run typecheck` | 检查宿主与客户端类型 |
+| `npm test` | 自动构建后运行 `node:test`，包含 jsdom、配置、路由和无障碍测试 |
+| `npm run test:coverage` | 自动构建后运行覆盖率检查，门槛为行 85%、分支 60%、函数 60% |
+| `npm run test:e2e` | 运行 Playwright 浏览器测试，需要事先构建并准备浏览器 |
+| `npm pack` | 自动构建并生成可安装的 `.tgz` 包 |
+
+运行浏览器测试：
+
+```bash
+npm run build
+# 非 Windows 环境或 CI 首次运行时准备 Chromium
+npx playwright install chromium
+npm run test:e2e
+```
+
+本地 Windows 默认使用已安装的 Microsoft Edge，可省略 Chromium 安装步骤；其他环境默认使用 Playwright Chromium，也可通过 `PLAYWRIGHT_CHANNEL` 指定浏览器渠道。详见 [`playwright.config.ts`](playwright.config.ts)。
+
+### 项目结构
+
+```text
+src/
+├─ index.ts                # 宿主入口、配置、启动注入与路由注册
+├─ host/                   # 配置 schema、存储、HTTP 路由、启动遮罩
+├─ client/
+│  ├─ index.ts             # DSH 客户端入口
+│  ├─ overlay.ts           # 动画槽位与预览
+│  ├─ boot/                # 动画控制、媒体、时序、进度与倒计时
+│  ├─ runtime/             # 资源释放、环境、标题栏与预览呈现
+│  └─ settings/            # 设置面板、控件、文件导入与客户端存储
+└─ shared/                 # 类型、默认值、校验与 CSS 风格
+scripts/build.mjs          # 宿主 tsc + 客户端 esbuild 和模块加载器包装
+tests/                     # Node.js 测试与 Playwright 浏览器测试
+lib/                       # 随包发布并纳入版本管理的构建产物
+docs/                      # 预览图片与兼容性矩阵
+```
+
+修改 `src/` 后重新构建，避免直接编辑 `lib/`。宿主输出 ESM；客户端输出由 `window.__ModuleLoader__` 加载的脚本。CI 会检查类型、测试、覆盖率，以及已提交的 `lib/` 能否由源码重建；浏览器测试使用模拟壳层，完整桌面流程仍需人工验收。
 
 ## 故障排查
 
-| 现象 | 排查 |
+| 现象 | 检查方式 |
 | --- | --- |
-| 设置页没有「开机动画」 | 设置壳是否加载；`settings.section` 是否声明；控制台是否有 `[dsh-boot-custom]` 报错 |
-| 设置面板空白 / 看不到 × | 插件已固定设置壳外层滚动并在操作区提供「关闭设置」；检查 profile 是否残留旧 `dsh-boot-animation` 行，完全退出后重启 |
-| 启动仍然很慢 | 调整「启动动画时长」；检查是否启用了高 GPU 负担风格；确认已重启加载新 bundle |
-| 视频黑屏 | 编码/容器支持；`file://` 策略；尝试 HTTP 源或 base64 |
-| 没有声音 | Chromium 自动播放策略；插件会自动静音降级 |
-| 保存失败 | 面板会显示错误；检查 config-editor entry / settings 命名空间 / 路由状态 |
-| 配置重启后丢失 | 是否用了「仅本次预览」；base64 是否超限；bundle 是否仍在 profile 中 |
+| 找不到 `dsh` 命令 | 确认 DSH CLI 可用，并在其可用的终端环境执行安装 |
+| 插件未加载或没有“开机动画”设置页 | 确认安装到了正确 profile、已完全重启；检查 `dsh.profile.bundles`、渲染器和设置服务是否加载，以及 `[dsh-boot-custom]` 日志 |
+| 仍然出现启动白屏 | 核对宿主是否支持启动注入；区分 Web HTML 注入与桌面 IPC 注入时机，见兼容性说明 |
+| 设置面板显示异常或预览后未恢复 | 检查是否同时加载旧名称插件；完全退出并重启，再查看客户端日志 |
+| 视频黑屏或转为 CSS 背景 | 检查路径、网络、媒体编码与本地文件权限；用较小的已知可播放文件验证 |
+| 没有声音 | 确认已启用音效、音量和来源正确；检查自动播放策略是否导致静音降级 |
+| 保存失败或重启后配置丢失 | 查看面板保存状态；确认未使用“仅本次预览”；宿主重启后刷新页面以更新会话信息，再检查存储与路由错误 |
+| 希望更快进入应用 | 调低 `bootDuration`；如需手动立即跳过，启用 `allowSkip` 并关闭倒计时或设为 0；仍需等待宿主完成必要加载 |
 
-更多运行时契约和逐项配置见 [README.zh.md](README.zh.md)。
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request。提交前请运行：
-
-```bash
-npm run typecheck && npm test
-```
-
-## License
-
-[MIT](LICENSE) © dsh-boot-custom contributors
-
----
+更多配置和运行时细节见 [README.zh.md](README.zh.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## English
 
-**DSH Boot Custom** is a boot-animation plugin for the DeepSeek Harness desktop app.
+**DSH Boot Custom** adds configurable boot animations to the DeepSeek Harness desktop app: eight CSS backgrounds, video selection across launches, a startup mask, custom logo and greetings, progress hints, audio and full-window previews.
 
-- Video rotation (local files, HTTP, data URIs) or 8 pure-CSS backdrop styles.
-- First-frame anti-flash mask injected through `webserver/index-inject`.
-- Configurable minimum boot duration (`bootDuration`, default 3 s), with the app page revealed only after both the animation and app-ready gates pass.
-- Any non-function, non-Tab key or pointer click skips once `allowSkip` and the countdown allow it.
-- Logo, greeting, real progress, countdown, five exit transitions, custom audio.
-- Full-window fixed overlay, Windows caption-strip fusion, in-settings preview.
-- 69 tests, MIT licensed.
+Build an installable archive with `npm ci` and `npm pack`, then install the resulting `.tgz` using `dsh plugin --profile desktop add "path/to/package.tgz"`. Fully restart the desktop app and open **Settings → 开机动画**. Settings changes save automatically; previewing a temporary local file does not persist that file URL.
 
-**Install**
+The package declares DSH `>=0.1.7-rc.1 <0.3.0` compatibility. See the [compatibility matrix](docs/compat-matrix.md) for tested environments and remaining desktop validation.
 
-```bash
-dsh plugin --profile desktop add "path/to/dsh-boot-custom-1.0.2.tgz"
-```
+## 许可证
 
-Fully restart the desktop app, then open **Settings → 开机动画**. The complete configuration manual is in [README.zh.md](README.zh.md).
+[MIT](LICENSE)

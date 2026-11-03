@@ -55,7 +55,7 @@ test('the real controller mounts, waits for app readiness and exits', async ({ p
     globalThis.__BOOT_ANIM_CONFIG__ = config
     globalThis.__BOOT_ANIM_META__ = {
       name: 'dsh-boot-custom',
-      version: '1.0.2',
+      version: '1.0.3',
       writeMode: 'file',
       startedAt: Date.now(),
     }

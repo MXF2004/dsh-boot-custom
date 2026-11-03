@@ -14,6 +14,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 
 import {
+  configureSettingsPresentation,
   HostConfigStore,
   resolveConfigEditor,
   resolveConfigEntry,
@@ -62,6 +63,69 @@ test('resolveConfigEntry prefers the fiber entry and falls back to the loader', 
   })
   assert.equal(viaLoader, own)
   assert.equal(resolveConfigEntry({}), undefined)
+})
+
+test('the 0.2.x settings service receives the custom-page policy and its disposer', () => {
+  const entryFiber = { uid: 'entry-fiber' }
+  const fiber = { entry: { options: { id: 'dsh-boot-custom' }, fiber: entryFiber } }
+  const effects = []
+  let configured
+  let disposed = false
+  const settings = {
+    configure(presentation, owner) {
+      configured = { presentation, owner }
+      return () => {
+        disposed = true
+      }
+    },
+  }
+  const ctx = {
+    fiber,
+    get(name) {
+      return name === 'settings' ? settings : undefined
+    },
+    effect(callback) {
+      const dispose = callback()
+      if (typeof dispose === 'function') effects.push(dispose)
+    },
+  }
+
+  configureSettingsPresentation(ctx)
+  assert.deepEqual(configured.presentation, { auto: false })
+  assert.equal(configured.owner, entryFiber, 'the policy is keyed by the entry fiber')
+
+  for (const dispose of effects) dispose()
+  assert.equal(disposed, true, 'unloading releases the presentation policy')
+})
+
+test('the custom-page policy is a no-op on hosts without the 0.2.x seam', () => {
+  const calls = []
+  const legacy = {
+    register() {
+      calls.push('register')
+      return {}
+    },
+  }
+  assert.doesNotThrow(() =>
+    configureSettingsPresentation({ settings: legacy, fiber: {} }),
+  )
+  assert.deepEqual(calls, [], 'the legacy settings namespace is never touched')
+
+  assert.doesNotThrow(() => configureSettingsPresentation({ get: () => undefined, fiber: {} }))
+  assert.doesNotThrow(() =>
+    configureSettingsPresentation({
+      get: () => ({ configure: () => () => undefined }),
+    }),
+  )
+  const guarded = new Proxy(
+    {},
+    {
+      get() {
+        throw new Error('guarded service')
+      },
+    },
+  )
+  assert.doesNotThrow(() => configureSettingsPresentation({ get: () => guarded, fiber: {} }))
 })
 
 test('the config-editor store calls edit(entry, changeFn) and returns the next config', async () => {
