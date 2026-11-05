@@ -100,7 +100,7 @@ async function withRouteHarness(body) {
   globalThis.__BOOT_ANIM_CONFIG__ = normalizeConfig({ enabled: true, logo: { text: 'Initial' } })
   globalThis.__BOOT_ANIM_META__ = {
     name: 'dsh-boot-custom',
-    version: '1.0.3',
+    version: '1.0.4',
     writeMode: 'file',
     writeToken: token,
   }
@@ -137,7 +137,7 @@ test('a wrong session token is rejected and reported by the client', async () =>
     const warn = console.warn
     console.warn = () => undefined
     try {
-      globalThis.__BOOT_ANIM_META__ = { name: 'dsh-boot-custom', version: '1.0.3', writeMode: 'file', writeToken: 'wrong' }
+      globalThis.__BOOT_ANIM_META__ = { name: 'dsh-boot-custom', version: '1.0.4', writeMode: 'file', writeToken: 'wrong' }
       const client = new ClientConfigStore()
       await client.save({ logo: { text: 'MustNotPersist' } })
       assert.equal(client.getStatus().status, 'error')

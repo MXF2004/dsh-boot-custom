@@ -23,16 +23,17 @@ test('package.json declares the bundle, client and entry contracts', () => {
   assert.ok(pkg.files.includes('src'))
   assert.ok(pkg.files.includes('cordis.patch.yml'), 'files must ship the bundle patch')
   assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml')
+  assert.deepEqual(pkg.dsh.bundle.platforms, ['win32', 'darwin', 'linux'])
   assert.equal(pkg.dsh.manifestVersion, 1)
   assert.equal(pkg.icon, 'icon.svg')
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.equal(pkg.exports['./client'].default, './lib/client.js')
-  // 0.2.1's app-boot compatibility reader looks at the top-level engines.dsh;
+  // 0.2.x's app-boot compatibility reader looks at the top-level engines.dsh;
   // the older dsh.engines shape is not read by the current runtime.
   assert.ok(String(pkg.engines.dsh).startsWith('>=0.1.7'))
   assert.ok(String(pkg.engines.dsh).includes('<0.3.0'))
   assert.equal(pkg.dsh.engines, undefined)
-  assert.match(pkg.dependencies['@deepseek-ai/schemastery'], /\^?3\.18\.[5-9]/)
+  assert.match(pkg.dependencies['@deepseek-ai/schemastery'], /\^?3\.(?:18\.[5-9]|19\.\d+)/)
 })
 
 test('the patch row id, package name and host export are identical', async () => {

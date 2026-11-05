@@ -1,6 +1,6 @@
 {
   "name": "dsh-boot-custom",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Configurable boot animation for the DeepSeek Harness desktop app: video rotation, 8 CSS styles, first-frame anti-flash mask, boot timing and key/click skip.",
   "icon": "icon.svg",
   "type": "module",
@@ -29,7 +29,12 @@
   "dsh": {
     "manifestVersion": 1,
     "bundle": {
-      "patch": "./cordis.patch.yml"
+      "patch": "./cordis.patch.yml",
+      "platforms": [
+        "win32",
+        "darwin",
+        "linux"
+      ]
     },
     "client": {
       "platform": "web",
@@ -51,7 +56,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.5"
+    "@deepseek-ai/schemastery": "^3.19.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

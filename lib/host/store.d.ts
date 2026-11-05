@@ -68,7 +68,7 @@ export interface SettingsServiceLike {
 /**
  * The 0.2.x config editor face.
  *
- * Real signature (extracted from `@deepseek-ai/dsh-config-editor` 0.2.1):
+ * Real signature (extracted from `@deepseek-ai/dsh-config-editor` 0.2.x):
  * `edit(entry, change)` where `entry` is the OWNING LOADER ENTRY (not the row
  * id) and `change(current, inherited)` derives the next raw config. A row id
  * string is rejected by the service.

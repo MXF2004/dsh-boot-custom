@@ -1,7 +1,7 @@
 /**
  * Host configuration-store tests.
  *
- * The 0.2.1 desktop runtime exposes `configEditor.edit(entry, change)` — the
+ * The 0.2.x desktop runtime exposes `configEditor.edit(entry, change)` — the
  * entry OBJECT plus a change FUNCTION — which is easy to get wrong. These
  * tests pin that contract and the two fallback layers (settings namespace and
  * the JSON document).
@@ -67,13 +67,17 @@ test('resolveConfigEntry prefers the fiber entry and falls back to the loader', 
 
 test('the 0.2.x settings service receives the custom-page policy and its disposer', () => {
   const entryFiber = { uid: 'entry-fiber' }
+  // 0.2.2's SettingsForms.configure normalizes the owner through
+  // `owner.ctx.fiber`; the argument this plugin passes must support that.
+  entryFiber.ctx = { fiber: entryFiber }
   const fiber = { entry: { options: { id: 'dsh-boot-custom' }, fiber: entryFiber } }
   const effects = []
   let configured
   let disposed = false
   const settings = {
     configure(presentation, owner) {
-      configured = { presentation, owner }
+      const normalized = owner.ctx.fiber
+      configured = { presentation, owner, normalized }
       return () => {
         disposed = true
       }
@@ -93,6 +97,7 @@ test('the 0.2.x settings service receives the custom-page policy and its dispose
   configureSettingsPresentation(ctx)
   assert.deepEqual(configured.presentation, { auto: false })
   assert.equal(configured.owner, entryFiber, 'the policy is keyed by the entry fiber')
+  assert.equal(configured.normalized, entryFiber, '0.2.2 owner normalization keeps the same fiber')
 
   for (const dispose of effects) dispose()
   assert.equal(disposed, true, 'unloading releases the presentation policy')

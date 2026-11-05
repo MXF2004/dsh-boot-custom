@@ -7,11 +7,11 @@ Do not read an unexecuted row as verified.
 
 | Dimension | Target | Status |
 | --- | --- | --- |
-| DSH Web host | 0.2.1-rc.5 (current `app.asar`) | Executed on a temporary profile: host activation, first-frame rows, `shell.overlay`, `settings.section`, config-editor save/reset, in-settings preview; contract tests |
-| DSH desktop | 0.2.1-rc.5 `dsh-app://` carrier + IPC injection rows | Path read from the shipped `main.js`/`dsh-desktop-host`; desktop-window UAT pending |
+| DSH Web host | 0.2.2-rc.1 (current `app.asar`) | Executed on a temporary profile: host activation, first-frame rows, `shell.overlay`, `settings.section`, config-editor save/reset, in-settings preview; contract tests |
+| DSH desktop | 0.2.2-rc.1 `dsh-app://` carrier + IPC injection rows | Path read from the shipped `main.js`/`dsh-desktop-host`; desktop-window UAT pending |
 | DSH desktop | 0.1.7+ fallbacks (`settings`, JSON, no `configEditor`) | Implemented; store tests |
 | DSH web shell | `shell.overlay`, `settings.section`, `settings.configure`, `webserver/index-inject` | Contract tests + real-profile smoke |
-| Node.js | `^22.13.0 || >=24.0.0` | CI Node 24; DSH 0.2.1 bundles Node 24.21 |
+| Node.js | `^22.13.0 || >=24.0.0` | CI Node 24; DSH 0.2.2 bundles Node 24.21 |
 | Chromium | >= 120 (`target: chrome120` in the client build) | Playwright Chromium/Edge |
 
 ## OS and display
@@ -43,7 +43,7 @@ Do not read an unexecuted row as verified.
 
 - Full DSH desktop boot journey (real shell slots + video decode) is not covered by
   the Playwright mask harness; it needs a desktop UAT pass.
-- The 0.2.1 desktop loads the SPA over `dsh-app://` and applies
+- The 0.2.2 desktop loads the SPA over `dsh-app://` and applies
   `webserver/index-inject` rows from the Host through IPC after the document
   loads, so the mask is applied before React mounts rather than in the static
   document's first painted frame. The Web carrier still renders rows into the

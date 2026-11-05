@@ -2,6 +2,38 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.4] - 2026-11-05
+
+Compatibility release for **DeepSeek Harness 0.2.2-rc.1**, verified against a
+real temporary Web-host profile.
+
+### Changed
+
+- Declared the bundle's Host platforms explicitly: `win32`, `darwin` and
+  `linux`. DSH 0.2.2 validates `dsh.bundle.platforms` before composing a
+  bundle; omission still means every platform, but the supported set is now
+  part of the manifest.
+- `@deepseek-ai/schemastery` now tracks `^3.19.0`, matching DSH 0.2.2. The
+  project's `.volatile()` config contract is unchanged.
+- Documentation and compatibility metadata now target 0.2.2-rc.1 while keeping
+  the existing `>=0.1.7-rc.1 <0.3.0` DSH range and legacy fallbacks.
+- The settings-policy test now exercises 0.2.2's `owner.ctx.fiber`
+  normalization. The existing entry-fiber owner remains correct.
+- Test fixtures and release metadata now use 1.0.4.
+
+### Verified
+
+- Real DSH 0.2.2-rc.1 Web-host profile: host activation
+  (`store=config-editor`), first-frame mask and injection rows, boot overlay,
+  `settings.section` page, config-editor save, and the in-settings
+  preview/restore cycle.
+- Desktop 0.2.2 `dsh-app://` path: `dsh-desktop-host` now calls
+  `collectIndexInjections(browserPeer)` and the frontend still applies the
+  returned rows before React mounts. A desktop-window UAT pass is still
+  recommended.
+- 71 `node:test` cases plus 3 Playwright cases pass; line coverage remains
+  above 93%.
+
 ## [1.0.3] - 2026-11-03
 
 Compatibility release for **DeepSeek Harness 0.2.1-rc.5** (the current desktop and

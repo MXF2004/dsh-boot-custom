@@ -9,7 +9,7 @@
 - 宿主入口：`src/index.ts` → `lib/index.js`（ESM）
 - 客户端入口：`src/client/index.ts` → `lib/client.js`（classic script，经 `window.__ModuleLoader__` 注入）
 - 已废弃的 `src/client.ts` 单文件路径**不存在**于本工程
-- 运行时契约按桌面端实际打包的 **DSH 0.2.1-rc.5** 核对（`configEditor.edit(entry, change)`、`settings.section`、`settings.configure({ auto: false })`、`webserver/index-inject`、`shell.overlay`），并保留 0.1.x 的 `ctx.settings` 命名空间降级
+- 运行时契约按桌面端实际打包的 **DSH 0.2.2-rc.1** 核对（`configEditor.edit(entry, change)`、`settings.section`、`settings.configure({ auto: false })`、`webserver/index-inject`、`shell.overlay`），并保留 0.1.x 的 `ctx.settings` 命名空间降级
 
 ---
 
@@ -28,7 +28,7 @@
 | 跳过倒计时 | 0–10s；启动即计时，期间锁定跳过；结束后任意非功能键或鼠标点击即可跳过；app ready 与动画时长同时满足才退场；中央 / 右下 / 进度条上方；独立字号、颜色、发光、提示文字 |
 | 进入时机 | 启动动画至少播放 `bootDuration` 秒（默认 3s，可设 0–18s）；应用未就绪时继续等待；两者都满足后才显示软件页面 |
 | 问候语 | 固定 / 分时段（凌晨、早晨、中午、下午、晚上、深夜）/ 随机语录；多行、Emoji；淡入上浮 / 打字机；独立开关与垂直位置；视频模式半透明叠加且层级低于 Logo |
-| 首帧 | 宿主向 `webserver/index-inject` 注入 `global / style / html / script` 行；Web 端随索引首帧渲染，桌面端 0.2.1 在 IPC 注入后、应用挂载前应用；`end()` 交接 + 12s 未认领自保；不修改 `dist/index.html` |
+| 首帧 | 宿主向 `webserver/index-inject` 注入 `global / style / html / script` 行；Web 端随索引首帧渲染，桌面端 0.2.2 在 IPC 注入后、应用挂载前应用；`end()` 交接 + 12s 未认领自保；不修改 `dist/index.html` |
 | 桌面适配 | `navigator.windowControlsOverlay.getTitlebarAreaRect()` + `geometrychange` + `env(titlebar-area-height)` 降级；两者皆无时为 0，不硬编码像素 |
 | 无障碍 | `prefers-reduced-motion: reduce` 时不播视频、不做入场动画，遮罩保留纯色并隐藏 CSS 装饰背景动画，app ready 后以 0.1s 转场退场 |
 | 兜底 | 20s 强制结束；所有异步链路捕获；`apply` 绝不 throw |
@@ -75,7 +75,7 @@ dsh-boot-custom/
 
 ### 环境
 
-- Node.js `^22.13.0 || >=24.0.0`（DSH 0.2.1 运行时为 Node 24.21）
+- Node.js `^22.13.0 || >=24.0.0`（DSH 0.2.2 运行时为 Node 24.21）
 - npm（或 pnpm）
 - 仅构建需要联网安装 devDependencies
 
@@ -88,7 +88,7 @@ npm run build          # 产出 lib/index.js 与 lib/client.js
 npm test               # 71 个测试（会先自动 build）
 npm run test:coverage  # node:test 覆盖率报告
 npm run test:e2e       # Playwright 首帧 + controller E2E（需浏览器）
-npm pack               # 生成 dsh-boot-custom-1.0.3.tgz
+npm pack               # 生成 dsh-boot-custom-1.0.4.tgz
 ```
 
 构建细节：
@@ -155,7 +155,7 @@ npm run build
 npm pack
 
 # 安装到 desktop profile（路径换成你的实际路径）
-dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.3.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.4.tgz"
 ```
 
 本地开发时也可以直接装目录：
@@ -393,7 +393,7 @@ function readField(value) {
 
    宿主通过 `ctx.fiber.entry` 取得 entry，取不到时回退 `loader.entries()` 中 `options.id === 'dsh-boot-custom'` 的条目。两者都不可用时自动降级到下一层。
 
-   0.2.1 的设置服务还提供 `configure({ auto: false }, ctx.fiber)`：本插件自带 `settings.section` 页面，因此激活时声明关闭按 schema 自动生成的重复表单，并用 `ctx.effect` 释放该策略。宿主没有该方法时直接跳过；旧版 `ctx.settings.register()` 路径不受影响。
+   0.2.x 的设置服务还提供 `configure({ auto: false }, ctx.fiber)`：本插件自带 `settings.section` 页面，因此激活时声明关闭按 schema 自动生成的重复表单，并用 `ctx.effect` 释放该策略。0.2.2 会在服务内部通过 `owner.ctx.fiber` 归一化 owner，本插件传入的 entry fiber 仍解析为同一个 fiber；宿主没有该方法时直接跳过，旧版 `ctx.settings.register()` 路径不受影响。
 
 2. **`ctx.settings` 命名空间（0.1.x）**
 
@@ -415,7 +415,7 @@ function readField(value) {
    - `style`：首帧遮罩 CSS
    - `html`（body）：遮罩节点
    - `script`（body）：首帧控制器
-2. 遮罩节点在应用根节点之前渲染，所以应用内容出现时已经处于遮罩/动画之下，不经过应用自身的 Loading 态；Web 端由服务端索引直接渲染，桌面端 0.2.1 在 `dshDesktopBoot.ready()` 后、React 挂载前应用注入行。
+2. 遮罩节点在应用根节点之前渲染，所以应用内容出现时已经处于遮罩/动画之下，不经过应用自身的 Loading 态；Web 端由服务端索引直接渲染，桌面端 0.2.2 在 `dshDesktopBoot.ready()` 后、React 挂载前应用注入行。
 3. 脚本定义：
 
    ```js
@@ -435,7 +435,7 @@ function readField(value) {
 - 动画容器：`shell.overlay`（list / root 作用域，常驻、点击穿透，条目自行开启 `pointer-events`）。
   - `apply` 中先尝试直接 `ctx.slots.register()`；若布局尚未声明该槽位，自动回退 `ctx.slots.inject('shell.overlay', …)`，两种情况都不会阻塞启动。
   - 退场完成后**注销槽位条目**；下次预览再按需注册。
-- 设置页：`settings.section`（list / root）。0.2.1 的设置壳仍渲染该槽位（已从 `ui-settings-general` 源码核对），因此「开机动画」会出现在系统设置左侧导航。
+- 设置页：`settings.section`（list / root）。0.2.2 的设置壳仍渲染该槽位（已从 `ui-settings-general` 源码核对），因此「开机动画」会出现在系统设置左侧导航。
 
 ### 6.6 失败行为
 
@@ -557,7 +557,7 @@ npm test
 - `tests/config.test.mjs`：默认值、范围/步长、颜色/字体/URL 白名单、视频去重与上限、六时段、问候语三种模式、轮播游标、Windows 路径转 URL、原型污染、输入不可变性；新增 CSS 颜色解析、相对亮度与标题栏图标对比色、UNC/远程 `file://` 拒绝，以及中英文区域判断。
 - `tests/first-frame.test.mjs`：注入行顺序、启用/禁用分支、HTML 转义、无 `</script` / `</style`；`node:vm` 执行首帧脚本，验证 `end()` 认领顺序、12s 未认领自保、已认领不自保、重复安装幂等、只删除带标记的首帧样式；新增 `pointer-events:none`、纯 CSS 12s 兜底与透明标题栏探针规则。
 - `tests/contract.test.mjs`：`package.json` 强制字段、patch 行 id / 包名 / 宿主导出名一致、volatile 锚点、`src/client.ts` 不存在、客户端 bundle 的加载器外壳与 `inject = ['slots']`、宿主 ESM/schemastery 外置、注入版本与 `package.json` 一致。
-- `tests/store.test.mjs`：0.2.1 `configEditor.edit(entry, changeFn)` 真实契约、`settings.configure({ auto: false }, fiber)` 自定义页策略与释放、settings 命名空间优先级/写入/watch、JSON 原子写与恢复默认；新增“恢复默认会删除遗留 `config.json`，旧值不会回弹”。
+- `tests/store.test.mjs`：0.2.x `configEditor.edit(entry, changeFn)` 真实契约、`settings.configure({ auto: false }, fiber)` 自定义页策略与释放（含 0.2.2 的 `owner.ctx.fiber` 归一化）、settings 命名空间优先级/写入/watch、JSON 原子写与恢复默认；新增“恢复默认会删除遗留 `config.json`，旧值不会回弹”。
 - `tests/routes.test.mjs`：配置读写接口只接受 loopback `Host` 和本次激活的会话 token；缺少 token、DNS rebinding Host 均返回 403。
 - `tests/dom-smoke.test.mjs`：jsdom + React 真实挂载 `shell.overlay` 条目，验证 app ready 提前到达时仍受 bootDuration 下限约束（不会提前进入页面）、随后正常退场、遮罩被认领并移除、槽位条目释放、标题栏融合样式安装与退场清理、宿主为 body 直系子节点（视口定位）、无 activation 失败。
 - `tests/preview-presentation.test.mjs`：用 esbuild 内存构建后直接测试真实 `preview-presentation.ts`，验证设置 portal 隐藏/精确恢复、焦点释放、重复调用与引用计数、以及找不到 portal 时的安全降级。
@@ -585,12 +585,12 @@ npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chrom
 本工程的运行时契约不是猜测：已从桌面端 `app.asar` 中提取并核对了：
 
 - `@deepseek-ai/dsh-config-editor`：`edit(entry, change)` 的真实签名；
-- `@deepseek-ai/dsh-settings`：0.2.1 的 `configure(presentation, owner)` 页面策略与 entry/fiber 绑定；
+- `@deepseek-ai/dsh-settings`：0.2.x 的 `configure(presentation, owner)` 页面策略与 entry/fiber 绑定（0.2.2 起按 `owner.ctx.fiber` 归一化）；
 - `@deepseek-ai/dsh-host-webserver`：`index-inject` 的 `global/style/html/script` 行类型与 `collectIndexInjections()`；
 - `@deepseek-ai/dsh-client-ui-settings-general`：`settings.section` 槽位与 `{close}` owner props；
 - `@deepseek-ai/dsh-client-ui-layout`：`shell.overlay` 为 list/root；
 - `lib/preload-app.cjs` 的 `syncWindowsAppearance`：隐藏探针读取 `--dsw-specific-sidebar-fill` / `--dsw-alias-label-primary` 并转发 `setTitleBarOverlay()`，本插件据此实现标题栏自适应；
-- 桌面端 0.2.1 的启动链：`dsh-desktop-host` 上报 `collectIndexInjections()` 行，前端在 `dshDesktopBoot.ready()` 后、React 挂载前应用 `global/script/style/html` 行。
+- 桌面端 0.2.2 的启动链：`dsh-desktop-host` 上报 `collectIndexInjections(browserPeer)` 行，前端在 `dshDesktopBoot.ready()` 后、React 挂载前应用 `global/script/style/html` 行。
 
 ---
 
@@ -598,8 +598,8 @@ npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chrom
 
 | 运行时 | 行为 |
 | --- | --- |
-| 桌面端 0.2.1-rc.5（当前 `app.asar`，推荐） | web 宿主实测：`configEditor.edit(entry, change)` 保存、`settings.section` 页面、`webserver/index-inject` 行、`shell.overlay` 动画与预览；`settings.configure({ auto: false })` 抑制重复的生成表单。桌面端 `dsh-app://` + IPC 注入路径已按 `app.asar` 核对 |
-| 桌面端 0.2.1-rc.5（窗口回归） | 静态文档与 IPC 注入行路径已核对；桌面窗口 UAT 仍需执行 |
+| 桌面端 0.2.2-rc.1（当前 `app.asar`，推荐） | web 宿主实测：`configEditor.edit(entry, change)` 保存、`settings.section` 页面、`webserver/index-inject` 行、`shell.overlay` 动画与预览；`settings.configure({ auto: false })` 抑制重复的生成表单。桌面端 `dsh-app://` + IPC 注入路径已按 `app.asar` 核对 |
+| 桌面端 0.2.2-rc.1（窗口回归） | 静态文档与 IPC 注入行路径已核对；桌面窗口 UAT 仍需执行 |
 | 0.2.x 早期版本 | 同一组 0.2.x 契约；未知的新字段安全忽略 |
 | 0.1.7+（按用户规范） | volatile Config、`configEditor`、`loader/volatile-update` 路径均已实现；`apply` 同时兼容引用/普通值 |
 | 0.1.x（无 configEditor） | 自动回退 `ctx.settings` 的 `boot-custom` 命名空间；再回退 JSON 文件 |
@@ -608,7 +608,7 @@ npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chrom
 
 操作系统、DPI、时区和 locale 的逐项状态见 [`docs/compat-matrix.md`](docs/compat-matrix.md)。
 
-> 说明：工程在当前机器上完成了构建、71 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；并在临时 profile 中安装 `1.0.3` 包，用 DSH 0.2.1-rc.5 的 web 宿主完成真实启动、首帧注入、设置页渲染、configEditor 保存/复位与预览回归，未修改用户的 desktop profile。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
+> 说明：工程在当前机器上完成了构建、71 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；并在临时 profile 中安装 `1.0.4` 包，用 DSH 0.2.2-rc.1 的 web 宿主完成真实启动、首帧注入、设置页渲染、configEditor 保存/复位与预览回归，未修改用户的 desktop profile。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
 
 ---
 
