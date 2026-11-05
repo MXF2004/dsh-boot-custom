@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.6] - 2026-11-05
+
+Update-check reliability.
+
+### Fixed
+
+- A cold GitHub API connection could exceed the old 10 s host timeout. The host
+  now races the release lookup against a 20 s deadline, and the browser uses a
+  hard 25 s deadline for checks (30 s for starting an update) so a hung request
+  cannot leave the card stuck on 「检查中…」.
+- The update card aborts its request when the deadline expires and reports the
+  timeout instead of waiting indefinitely.
+
+### Verified
+
+- Real 1.0.5 → 1.0.6 Web-host update: the 1.0.5 panel found the new release,
+  installed it through Plugin Manager, and the profile switched to 1.0.6.
+- 78 `node:test` cases, 3 Playwright cases and the axe A/AA gate remain green.
+
 ## [1.0.5] - 2026-11-05
 
 In-page update button for the settings panel.

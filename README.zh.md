@@ -86,10 +86,10 @@ dsh-boot-custom/
 npm install
 npm run typecheck      # 宿主 + 客户端严格类型检查
 npm run build          # 产出 lib/index.js 与 lib/client.js
-npm test               # 77 个测试（会先自动 build）
+npm test               # 78 个测试（会先自动 build）
 npm run test:coverage  # node:test 覆盖率报告
 npm run test:e2e       # Playwright 首帧 + controller E2E（需浏览器）
-npm pack               # 生成 dsh-boot-custom-1.0.5.tgz
+npm pack               # 生成 dsh-boot-custom-1.0.6.tgz
 ```
 
 构建细节：
@@ -156,7 +156,7 @@ npm run build
 npm pack
 
 # 安装到 desktop profile（路径换成你的实际路径）
-dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.5.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.6.tgz"
 ```
 
 本地开发时也可以直接装目录：
@@ -553,7 +553,7 @@ Windows 桌面端的最小化 / 最大化 / 关闭按钮是 **Electron 原生 ca
 npm test
 ```
 
-共 77 个测试：
+共 78 个测试：
 
 - `tests/config.test.mjs`：默认值、范围/步长、颜色/字体/URL 白名单、视频去重与上限、六时段、问候语三种模式、轮播游标、Windows 路径转 URL、原型污染、输入不可变性；新增 CSS 颜色解析、相对亮度与标题栏图标对比色、UNC/远程 `file://` 拒绝，以及中英文区域判断。
 - `tests/first-frame.test.mjs`：注入行顺序、启用/禁用分支、HTML 转义、无 `</script` / `</style`；`node:vm` 执行首帧脚本，验证 `end()` 认领顺序、12s 未认领自保、已认领不自保、重复安装幂等、只删除带标记的首帧样式；新增 `pointer-events:none`、纯 CSS 12s 兜底与透明标题栏探针规则。
@@ -571,13 +571,13 @@ npm test
 - `tests/a11y-controls.test.mjs` / `tests/a11y-panel.test.mjs`：Row label/提示关联、按钮名称、Notice live region、完整设置面板的 axe WCAG A/AA 门禁。
 - `tests/ready-timeout.test.mjs` / `tests/timing.test.mjs`：注入时钟验证 4s UI 保底、9s 最小显示、预览固定寿命与 20s 硬超时从首帧起算。
 - `tests/update.test.mjs`：GitHub Release 解析、版本比较、固定资产 URL 校验、`checkForUpdate` 网络/HTTP 失败、`beginUpdate` 交接 Plugin Manager、并发拒绝、更新路由 token/CSRF 与状态轮询。
-- `tests/e2e/injection.spec.ts` / `tests/e2e/boot.spec.ts`：Playwright 真实 Chromium/Edge 加载注入产物，验证首帧遮罩、指针穿透、全局配置、`</script>` 注入安全，以及真实 controller 的双闸门挂载/退场；3 个浏览器用例，不计入上面的 77 个 node:test 用例。
+- `tests/e2e/injection.spec.ts` / `tests/e2e/boot.spec.ts`：Playwright 真实 Chromium/Edge 加载注入产物，验证首帧遮罩、指针穿透、全局配置、`</script>` 注入安全，以及真实 controller 的双闸门挂载/退场；3 个浏览器用例，不计入上面的 78 个 node:test 用例。
 
 ### 测试与门禁命令
 
 ```bash
 npm run typecheck
-npm test                    # 77 个 node:test
+npm test                    # 78 个 node:test
 npm run test:coverage       # 覆盖率报告
 npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chromium）
 ```
@@ -610,7 +610,7 @@ npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chrom
 
 操作系统、DPI、时区和 locale 的逐项状态见 [`docs/compat-matrix.md`](docs/compat-matrix.md)。
 
-> 说明：工程在当前机器上完成了构建、77 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；并在临时 profile 中安装 `1.0.5` 包，用 DSH 0.2.2-rc.1 的 web 宿主完成真实启动、首帧注入、设置页渲染、configEditor 保存/复位、插件更新检查与预览回归，未修改用户的 desktop profile。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
+> 说明：工程在当前机器上完成了构建、78 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；并在临时 profile 中安装 `1.0.6` 包，用 DSH 0.2.2-rc.1 的 web 宿主完成真实启动、首帧注入、设置页渲染、configEditor 保存/复位、插件更新检查与预览回归，未修改用户的 desktop profile。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
 
 ---
 

@@ -49,7 +49,7 @@ test('real host rows are consumable by the real client reader', () => {
   })
   const meta = {
     name: 'dsh-boot-custom',
-    version: '1.0.5',
+    version: '1.0.6',
     writeMode: 'file',
     writeToken: 'session-token',
   }
@@ -68,7 +68,7 @@ test('real host rows are consumable by the real client reader', () => {
   assert.equal(consumed.audio.file, 'https://example.test/boot.mp3')
 
   const consumedMeta = env.readInjectedMeta()
-  assert.equal(consumedMeta.version, '1.0.5')
+  assert.equal(consumedMeta.version, '1.0.6')
   assert.equal(consumedMeta.writeMode, 'file')
   assert.equal(consumedMeta.writeToken, 'session-token')
 })
@@ -76,7 +76,7 @@ test('real host rows are consumable by the real client reader', () => {
 test('the disabled branch still reaches the client as a complete config', () => {
   const rows = buildInjectionRows(normalizeConfig({ enabled: false }), {
     name: 'dsh-boot-custom',
-    version: '1.0.5',
+    version: '1.0.6',
     writeMode: 'settings',
   })
   assert.equal(rows.filter((row) => row.kind === 'style').length, 0)

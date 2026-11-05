@@ -65,22 +65,35 @@ async function fetchJson(
   init: RequestInit,
   timeoutMs: number,
 ): Promise<JsonResult> {
+  const controller = new AbortController()
+  let timer: ReturnType<typeof setTimeout> | undefined
   try {
     const headers = new Headers(init.headers)
     if (!headers.has('accept')) headers.set('accept', 'application/json')
-    const response = await fetch(routeUrl(path), {
-      ...init,
-      headers,
-      signal: AbortSignal.timeout(timeoutMs),
+    const request = (async (): Promise<JsonResult> => {
+      const response = await fetch(routeUrl(path), {
+        ...init,
+        headers,
+        signal: controller.signal,
+      })
+      const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>
+      return { status: response.status, ok: response.ok, payload }
+    })()
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        controller.abort()
+        reject(new Error('请求超时'))
+      }, timeoutMs)
     })
-    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>
-    return { status: response.status, ok: response.ok, payload }
+    return await Promise.race([request, deadline])
   } catch (error) {
     return {
       status: 0,
       ok: false,
       payload: { error: error instanceof Error ? error.message : '网络请求失败' },
     }
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
   }
 }
 
@@ -116,7 +129,7 @@ export function UpdateSection(): React.ReactElement {
     const result = await fetchJson(
       ROUTES.update,
       { method: 'GET', headers: authHeaders(), cache: 'no-store' },
-      12_000,
+      25_000,
     )
     checking.current = false
     if (!alive.current) return
@@ -166,7 +179,7 @@ export function UpdateSection(): React.ReactElement {
         },
         body: '{}',
       },
-      20_000,
+      30_000,
     )
     if (!alive.current) return
     if (result.status === 202 || result.payload.ok === true) {

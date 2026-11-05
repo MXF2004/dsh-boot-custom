@@ -139,6 +139,19 @@ test('checkForUpdate reports HTTP and network failures without throwing', async 
   assert.match(network.error, /offline/)
 })
 
+test('checkForUpdate enforces its own deadline when fetch never settles', async () => {
+  const started = Date.now()
+  const result = await checkForUpdate({
+    current: '1.0.6',
+    canApply: true,
+    timeoutMs: 20,
+    fetch: () => new Promise(() => undefined),
+  })
+  assert.equal(result.ok, false)
+  assert.match(result.error, /timed out/)
+  assert.ok(Date.now() - started < 1_000, 'the host deadline is independent of fetch')
+})
+
 test('beginUpdate hands the validated asset to Plugin Manager', async () => {
   const calls = []
   const manager = {

@@ -174,7 +174,7 @@ test('caption fusion follows a light launch background', () => {
 
 test('injection rows follow the documented render order', () => {
   const config = normalizeConfig({ enabled: true })
-  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.5', writeMode: 'file' })
+  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.6', writeMode: 'file' })
   assert.deepEqual(
     rows.map((row) => `${row.kind}${row.placement === undefined ? '' : `:${row.placement}`}`),
     ['global', 'global', 'style', 'html:body', 'script:body'],
@@ -187,7 +187,7 @@ test('injection rows follow the documented render order', () => {
 
 test('a disabled plugin injects the config global but no mask', () => {
   const config = normalizeConfig({ enabled: false })
-  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.5', writeMode: 'settings' })
+  const rows = buildInjectionRows(config, { name: 'dsh-boot-custom', version: '1.0.6', writeMode: 'settings' })
   assert.deepEqual(
     rows.map((row) => row.kind),
     ['global', 'global'],
@@ -198,7 +198,7 @@ test('a disabled plugin injects the config global but no mask', () => {
 test('rows are JSON-serializable (the table feeds two renderers)', () => {
   const rows = buildInjectionRows(normalizeConfig({ enabled: true }), {
     name: 'dsh-boot-custom',
-    version: '1.0.5',
+    version: '1.0.6',
     writeMode: 'file',
   })
   const json = JSON.parse(JSON.stringify(rows))
@@ -215,7 +215,7 @@ test('oversized media is stripped from the injected config, not the stored value
   assert.equal(config.videos.length, 3, 'normalization preserves the persisted sources')
   const rows = buildInjectionRows(config, {
     name: 'dsh-boot-custom',
-    version: '1.0.5',
+    version: '1.0.6',
     writeMode: 'file',
   })
   const injected = rows.find((row) => row.kind === 'global' && row.name === '__BOOT_ANIM_CONFIG__')

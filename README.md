@@ -45,7 +45,7 @@
 将命令中的路径替换为实际的 `.tgz` 文件路径：
 
 ```powershell
-dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom-1.0.5.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom-1.0.6.tgz"
 ```
 
 安装后，**完全退出并重新启动 DSH 桌面端，包括托盘进程**，再打开「设置 → 开机动画」。宿主配置和启动遮罩在启动阶段加载，仅刷新页面不足以完成安装后的切换。

@@ -188,6 +188,19 @@ export function parseLatestRelease(
   }
 }
 
+/** Race a promise against a hard deadline, even if its implementation ignores aborts. */
+async function withDeadline<T>(operation: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), timeoutMs)
+  })
+  try {
+    return await Promise.race([operation, deadline])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
 /** Query the fixed public repository for its latest release. */
 export async function checkForUpdate(options: {
   current: string
@@ -197,14 +210,19 @@ export async function checkForUpdate(options: {
 }): Promise<UpdateCheck> {
   const fetchImpl = options.fetch ?? globalThis.fetch
   if (typeof fetchImpl !== 'function') return { ok: false, error: 'fetch is unavailable' }
+  const timeoutMs = options.timeoutMs ?? 20_000
   try {
-    const response = await fetchImpl(UPDATE.api, {
-      headers: {
-        accept: 'application/vnd.github+json',
-        'user-agent': `dsh-boot-custom/${options.current}`,
-      },
-      signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
-    })
+    const response = await withDeadline(
+      fetchImpl(UPDATE.api, {
+        headers: {
+          accept: 'application/vnd.github+json',
+          'user-agent': `dsh-boot-custom/${options.current}`,
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      }),
+      timeoutMs,
+      'GitHub release lookup timed out',
+    )
     if (!response.ok) return { ok: false, error: `GitHub API HTTP ${String(response.status)}` }
     return parseLatestRelease(await response.json(), options.current, options.canApply)
   } catch (error) {

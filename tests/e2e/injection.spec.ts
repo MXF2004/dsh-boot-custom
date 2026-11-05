@@ -47,7 +47,7 @@ test('the real injection payload paints a non-blocking mask and reaches the clie
   })
   const rows = buildInjectionRows(config, {
     name: 'dsh-boot-custom',
-    version: '1.0.5',
+    version: '1.0.6',
     writeMode: 'file',
     writeToken: 'e2e-token',
   })
@@ -80,7 +80,7 @@ test('the real injection payload paints a non-blocking mask and reaches the clie
   })
   assert(globals.enabled === true)
   assert(globals.token === 'e2e-token')
-  assert(globals.version === '1.0.5')
+  assert(globals.version === '1.0.6')
 
   await page.evaluate(() => globalThis.__BOOT_ANIM_FIRST_FRAME__.end())
   await expect(mask).toHaveCount(0)
@@ -97,7 +97,7 @@ test('user text cannot close the injected script', async ({ page }) => {
   })
   const rows = buildInjectionRows(config, {
     name: 'dsh-boot-custom',
-    version: '1.0.5',
+    version: '1.0.6',
     writeMode: 'file',
   })
   await page.setContent(renderDocument(rows), { waitUntil: 'load' })
