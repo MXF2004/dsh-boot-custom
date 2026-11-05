@@ -17,8 +17,10 @@ Update-check reliability.
 
 ### Verified
 
-- Real 1.0.5 → 1.0.6 Web-host update: the 1.0.5 panel found the new release,
-  installed it through Plugin Manager, and the profile switched to 1.0.6.
+- Real 1.0.4 → 1.0.5 Web-host update: the 1.0.4 panel found the new release,
+  installed it through Plugin Manager, and the profile switched to 1.0.5.
+- 1.0.6's release check and settings card were verified on a fresh 1.0.6
+  profile; the new hard deadlines are covered by the never-settling fetch test.
 - 78 `node:test` cases, 3 Playwright cases and the axe A/AA gate remain green.
 
 ## [1.0.5] - 2026-11-05
