@@ -11,6 +11,7 @@ Do not read an unexecuted row as verified.
 | DSH desktop | 0.2.2-rc.1 `dsh-app://` carrier + IPC injection rows | Path read from the shipped `main.js`/`dsh-desktop-host`; desktop-window UAT pending |
 | DSH desktop | 0.1.7+ fallbacks (`settings`, JSON, no `configEditor`) | Implemented; store tests |
 | DSH web shell | `shell.overlay`, `settings.section`, `settings.configure`, `webserver/index-inject` | Contract tests + real-profile smoke |
+| In-page update | GitHub Releases API + `pluginManager.installBundle` | Unit tests + real 0.2.2 profile check; managed install handoff covered with a fake manager |
 | Node.js | `^22.13.0 || >=24.0.0` | CI Node 24; DSH 0.2.2 bundles Node 24.21 |
 | Chromium | >= 120 (`target: chrome120` in the client build) | Playwright Chromium/Edge |
 

@@ -11,7 +11,7 @@
 export const PACKAGE_NAME = 'dsh-boot-custom'
 
 /** Release version mirrored into diagnostics and the injected meta row. */
-export const PLUGIN_VERSION = '1.0.4'
+export const PLUGIN_VERSION = '1.0.5'
 
 /** Settings namespace used on hosts that predate `ctx.configEditor`. */
 export const SETTINGS_NAMESPACE = 'boot-custom'
@@ -23,6 +23,15 @@ export const DATA_DIR_NAME = 'boot-custom'
 export const ROUTES = {
   config: '/plugins/dsh-boot-custom/config',
   reset: '/plugins/dsh-boot-custom/config/reset',
+  update: '/plugins/dsh-boot-custom/update',
+  updateStatus: '/plugins/dsh-boot-custom/update/status',
+} as const
+
+/** GitHub release source used by the in-page update button. */
+export const UPDATE = {
+  repo: 'MXF2004/dsh-boot-custom',
+  api: 'https://api.github.com/repos/MXF2004/dsh-boot-custom/releases/latest',
+  assetPrefix: 'https://github.com/MXF2004/dsh-boot-custom/releases/download/',
 } as const
 
 /** `globalThis` keys published by the first-frame injection. */

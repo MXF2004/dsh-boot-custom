@@ -9,7 +9,7 @@
 /** Package name, `cordis.patch.yml` row id and host export `name`. */
 export declare const PACKAGE_NAME = "dsh-boot-custom";
 /** Release version mirrored into diagnostics and the injected meta row. */
-export declare const PLUGIN_VERSION = "1.0.4";
+export declare const PLUGIN_VERSION = "1.0.5";
 /** Settings namespace used on hosts that predate `ctx.configEditor`. */
 export declare const SETTINGS_NAMESPACE = "boot-custom";
 /** Directory name under the profile dir used by the JSON fallback store. */
@@ -18,6 +18,14 @@ export declare const DATA_DIR_NAME = "boot-custom";
 export declare const ROUTES: {
     readonly config: "/plugins/dsh-boot-custom/config";
     readonly reset: "/plugins/dsh-boot-custom/config/reset";
+    readonly update: "/plugins/dsh-boot-custom/update";
+    readonly updateStatus: "/plugins/dsh-boot-custom/update/status";
+};
+/** GitHub release source used by the in-page update button. */
+export declare const UPDATE: {
+    readonly repo: "MXF2004/dsh-boot-custom";
+    readonly api: "https://api.github.com/repos/MXF2004/dsh-boot-custom/releases/latest";
+    readonly assetPrefix: "https://github.com/MXF2004/dsh-boot-custom/releases/download/";
 };
 /** `globalThis` keys published by the first-frame injection. */
 export declare const GLOBALS: {

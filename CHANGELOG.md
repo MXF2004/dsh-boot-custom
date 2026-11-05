@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.5] - 2026-11-05
+
+In-page update button for the settings panel.
+
+### Added
+
+- 「设置 → 开机动画 → 插件更新」 now shows the running version, checks the
+  repository's latest GitHub Release, and installs a newer release through DSH's
+  Plugin Manager (`installBundle`). The browser never supplies an install spec.
+- Update check/start/status routes share the existing loopback + per-activation
+  token + same-origin guards. The release asset URL is accepted only from the
+  fixed `MXF2004/dsh-boot-custom` repository prefix.
+- The panel polls the host's update state, reports `restart-required`/failure,
+  and falls back to a copyable `dsh plugin --profile ... add ...` command when
+  the host has no Plugin Manager.
+- Update state is kept on `globalThis` so a successful HMR reload does not lose
+  the result the browser is polling for.
+
+### Verified
+
+- Real DSH 0.2.2-rc.1 Web-host profile: `pluginManager` available, update check
+  returns the latest release, and the settings panel renders the check result.
+- 77 `node:test` cases pass, including release parsing, semver ordering,
+  managed-install handoff, route authentication and status polling.
+- 3 Playwright cases and the axe A/AA gate remain green.
+
 ## [1.0.4] - 2026-11-05
 
 Compatibility release for **DeepSeek Harness 0.2.2-rc.1**, verified against a

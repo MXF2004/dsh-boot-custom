@@ -143,7 +143,7 @@ function isSameOrigin(req: IncomingMessage): boolean {
 }
 
 /** Host + session-token guard shared by reads and writes. */
-function authorizeRequest(req: IncomingMessage, token: string): string | undefined {
+export function authorizeRequest(req: IncomingMessage, token: string): string | undefined {
   if (!isLoopbackHost(req.headers.host)) return 'loopback host required'
   if (!hasWriteToken(req, token)) return 'missing plugin session token'
   if (!isSameOrigin(req)) return 'cross-origin request refused'
@@ -151,7 +151,7 @@ function authorizeRequest(req: IncomingMessage, token: string): string | undefin
 }
 
 /** Method + content-type + host/token guard shared by the write routes. */
-function authorizeWrite(req: IncomingMessage, token: string): string | undefined {
+export function authorizeWrite(req: IncomingMessage, token: string): string | undefined {
   const denied = authorizeRequest(req, token)
   if (denied !== undefined) return denied
   const contentType = req.headers['content-type']

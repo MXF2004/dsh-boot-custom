@@ -27,6 +27,7 @@ import { buildInjectionRows, type IndexInjectionRow } from './host/first-frame.j
 import { registerConfigRoutes, type RouteHostContext } from './host/routes.js'
 import { Config } from './host/schema.js'
 import { configureSettingsPresentation, HostConfigStore, type StoreHostContext } from './host/store.js'
+import { registerUpdateRoutes } from './host/update.js'
 
 export { Config }
 
@@ -96,6 +97,7 @@ function applyImpl(ctx: HostContext, config: unknown): void {
 
   const writeToken = randomBytes(24).toString('hex')
   registerConfigRoutes(ctx, store, writeToken)
+  registerUpdateRoutes(ctx, writeToken)
 
   const meta: BootAnimationMeta = {
     name: PACKAGE_NAME,

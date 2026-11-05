@@ -30,6 +30,7 @@
 | 问候语 | 固定 / 分时段（凌晨、早晨、中午、下午、晚上、深夜）/ 随机语录；多行、Emoji；淡入上浮 / 打字机；独立开关与垂直位置；视频模式半透明叠加且层级低于 Logo |
 | 首帧 | 宿主向 `webserver/index-inject` 注入 `global / style / html / script` 行；Web 端随索引首帧渲染，桌面端 0.2.2 在 IPC 注入后、应用挂载前应用；`end()` 交接 + 12s 未认领自保；不修改 `dist/index.html` |
 | 桌面适配 | `navigator.windowControlsOverlay.getTitlebarAreaRect()` + `geometrychange` + `env(titlebar-area-height)` 降级；两者皆无时为 0，不硬编码像素 |
+| 插件更新 | 设置页「插件更新」直接检查 GitHub Releases；通过 DSH Plugin Manager 安装正式发布包，状态轮询并提示完全重启；无 Plugin Manager 时显示手动命令 |
 | 无障碍 | `prefers-reduced-motion: reduce` 时不播视频、不做入场动画，遮罩保留纯色并隐藏 CSS 装饰背景动画，app ready 后以 0.1s 转场退场 |
 | 兜底 | 20s 强制结束；所有异步链路捕获；`apply` 绝不 throw |
 
@@ -85,10 +86,10 @@ dsh-boot-custom/
 npm install
 npm run typecheck      # 宿主 + 客户端严格类型检查
 npm run build          # 产出 lib/index.js 与 lib/client.js
-npm test               # 71 个测试（会先自动 build）
+npm test               # 77 个测试（会先自动 build）
 npm run test:coverage  # node:test 覆盖率报告
 npm run test:e2e       # Playwright 首帧 + controller E2E（需浏览器）
-npm pack               # 生成 dsh-boot-custom-1.0.4.tgz
+npm pack               # 生成 dsh-boot-custom-1.0.5.tgz
 ```
 
 构建细节：
@@ -155,7 +156,7 @@ npm run build
 npm pack
 
 # 安装到 desktop profile（路径换成你的实际路径）
-dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.4.tgz"
+dsh plugin --profile desktop add "D:\path\to\dsh-boot-custom\dsh-boot-custom-1.0.5.tgz"
 ```
 
 本地开发时也可以直接装目录：
@@ -552,7 +553,7 @@ Windows 桌面端的最小化 / 最大化 / 关闭按钮是 **Electron 原生 ca
 npm test
 ```
 
-共 71 个测试：
+共 77 个测试：
 
 - `tests/config.test.mjs`：默认值、范围/步长、颜色/字体/URL 白名单、视频去重与上限、六时段、问候语三种模式、轮播游标、Windows 路径转 URL、原型污染、输入不可变性；新增 CSS 颜色解析、相对亮度与标题栏图标对比色、UNC/远程 `file://` 拒绝，以及中英文区域判断。
 - `tests/first-frame.test.mjs`：注入行顺序、启用/禁用分支、HTML 转义、无 `</script` / `</style`；`node:vm` 执行首帧脚本，验证 `end()` 认领顺序、12s 未认领自保、已认领不自保、重复安装幂等、只删除带标记的首帧样式；新增 `pointer-events:none`、纯 CSS 12s 兜底与透明标题栏探针规则。
@@ -569,13 +570,14 @@ npm test
 - `tests/countdown.test.mjs`：倒计时递减期间 live region 静默，解锁时只播报一次。
 - `tests/a11y-controls.test.mjs` / `tests/a11y-panel.test.mjs`：Row label/提示关联、按钮名称、Notice live region、完整设置面板的 axe WCAG A/AA 门禁。
 - `tests/ready-timeout.test.mjs` / `tests/timing.test.mjs`：注入时钟验证 4s UI 保底、9s 最小显示、预览固定寿命与 20s 硬超时从首帧起算。
-- `tests/e2e/injection.spec.ts` / `tests/e2e/boot.spec.ts`：Playwright 真实 Chromium/Edge 加载注入产物，验证首帧遮罩、指针穿透、全局配置、`</script>` 注入安全，以及真实 controller 的双闸门挂载/退场；3 个浏览器用例，不计入上面的 71 个 node:test 用例。
+- `tests/update.test.mjs`：GitHub Release 解析、版本比较、固定资产 URL 校验、`checkForUpdate` 网络/HTTP 失败、`beginUpdate` 交接 Plugin Manager、并发拒绝、更新路由 token/CSRF 与状态轮询。
+- `tests/e2e/injection.spec.ts` / `tests/e2e/boot.spec.ts`：Playwright 真实 Chromium/Edge 加载注入产物，验证首帧遮罩、指针穿透、全局配置、`</script>` 注入安全，以及真实 controller 的双闸门挂载/退场；3 个浏览器用例，不计入上面的 77 个 node:test 用例。
 
 ### 测试与门禁命令
 
 ```bash
 npm run typecheck
-npm test                    # 71 个 node:test
+npm test                    # 77 个 node:test
 npm run test:coverage       # 覆盖率报告
 npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chromium）
 ```
@@ -608,7 +610,7 @@ npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chrom
 
 操作系统、DPI、时区和 locale 的逐项状态见 [`docs/compat-matrix.md`](docs/compat-matrix.md)。
 
-> 说明：工程在当前机器上完成了构建、71 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；并在临时 profile 中安装 `1.0.4` 包，用 DSH 0.2.2-rc.1 的 web 宿主完成真实启动、首帧注入、设置页渲染、configEditor 保存/复位与预览回归，未修改用户的 desktop profile。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
+> 说明：工程在当前机器上完成了构建、77 项 node:test、axe A/AA 门禁、覆盖率与 Playwright 首帧/真实 controller E2E；并在临时 profile 中安装 `1.0.5` 包，用 DSH 0.2.2-rc.1 的 web 宿主完成真实启动、首帧注入、设置页渲染、configEditor 保存/复位、插件更新检查与预览回归，未修改用户的 desktop profile。安装到 profile 后建议先看宿主/客户端控制台的 `[dsh-boot-custom]` 日志。
 
 ---
 
@@ -625,6 +627,8 @@ npm run test:e2e            # Playwright（Windows 使用 Edge；CI 安装 Chrom
 | 保存失败 | 面板状态会显示具体错误；检查 `/plugins/dsh-boot-custom/config` 是否 403/400；确认 `configEditor` entry 或 settings 命名空间可用；若宿主重启过，刷新页面以取得新的会话 token |
 | 设置面板空白 / 看不到 × | 插件会把设置壳外层 dialog 固定为 `overflow:clip`，并在操作区提供「关闭设置」；如果仍出现，检查 profile 是否残留旧 `dsh-boot-animation` 行，完全退出桌面端后重启 |
 | 配置重启后丢失 | 是否用了「仅本次预览」；base64 是否超过上限；`dsh.profile.bundles` 是否仍包含本包 |
+| 更新按钮显示 503 / 没有 Plugin Manager | 当前宿主未提供 `pluginManager`；按面板显示的命令手动执行 `dsh plugin --profile ... add "发布包 URL"` |
+| 更新完成后还是旧版本 | 更新安装的是磁盘文件，运行中的进程仍用旧代码；完全退出 DSH（含托盘）后重启 |
 
 ---
 

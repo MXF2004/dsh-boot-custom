@@ -38,5 +38,9 @@ export interface RouteConfigStore {
  * prevents a remote page from reaching the local write server.
  */
 export declare function isLoopbackHost(value: unknown): boolean;
+/** Host + session-token guard shared by reads and writes. */
+export declare function authorizeRequest(req: IncomingMessage, token: string): string | undefined;
+/** Method + content-type + host/token guard shared by the write routes. */
+export declare function authorizeWrite(req: IncomingMessage, token: string): string | undefined;
 /** Register the config routes; no-op when the host has no web server. */
 export declare function registerConfigRoutes(ctx: RouteHostContext, store: RouteConfigStore, writeToken: string): void;

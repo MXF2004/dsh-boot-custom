@@ -20,6 +20,7 @@ import { LIMITS, type BootAnimationConfig } from '../../shared/types.js'
 import { Button, ColorField, Notice, Row, Section, Select, Slider, Switch, TextArea, TextField } from './controls.js'
 import { acceptFor, familyLabel, fileToDataUrl, inspectFile, revokeObjectUrl, type FileKind } from './files.js'
 import type { ClientConfigStore, SaveStatus } from './store.js'
+import { UpdateSection } from './update.js'
 import { hideSettingsForPreview } from '../runtime/preview-presentation.js'
 
 const h = React.createElement
@@ -483,6 +484,9 @@ export function createSettingsPanel(deps: PanelDeps): React.ComponentType<{ clos
           `${statusText} · ${modeLabel(deps.store.writeMode)}`,
         ),
       ),
+
+      // 0. 插件更新
+      h(UpdateSection, null),
 
       // 1. 基础设置
       h(
